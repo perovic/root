@@ -489,7 +489,7 @@ namespace cling {
   ///\brief Maybe transform the input line to implement cint command line
   /// semantics (declarations are global) and compile to produce a module.
   ///
-  Interpreter::CompilationResult
+  Interpreter::ECompilationOutcome
   Interpreter::process(const std::string& input, Value* V /* = 0 */,
                        Transaction** T /* = 0 */) {
     if (isRawInputEnabled() || !ShouldWrapInput(input))
@@ -508,7 +508,7 @@ namespace cling {
     return Interpreter::kSuccess;
   }
 
-  Interpreter::CompilationResult
+  Interpreter::ECompilationOutcome
   Interpreter::parse(const std::string& input, Transaction** T /*=0*/) const {
     CompilationOptions CO;
     CO.CodeGeneration = 0;
@@ -521,7 +521,7 @@ namespace cling {
     return DeclareInternal(input, CO, T);
   }
 
-  Interpreter::CompilationResult
+  Interpreter::ECompilationOutcome
   Interpreter::loadModuleForHeader(const std::string& headerFile) {
     Preprocessor& PP = getCI()->getPreprocessor();
     //Copied from clang's PPDirectives.cpp
@@ -566,7 +566,7 @@ namespace cling {
     return Interpreter::kFailure;
   }
 
-  Interpreter::CompilationResult
+  Interpreter::ECompilationOutcome
   Interpreter::parseForModule(const std::string& input) {
     CompilationOptions CO;
     CO.CodeGeneration = 1;
@@ -584,13 +584,13 @@ namespace cling {
     DiagnosticsEngine& Diag = getCI()->getDiagnostics();
     Diag.setSeverity(clang::diag::warn_field_is_uninit,
                      clang::diag::Severity::Ignored, SourceLocation());
-    CompilationResult Result = DeclareInternal(input, CO);
+    ECompilationOutcome Result = DeclareInternal(input, CO);
     Diag.setSeverity(clang::diag::warn_field_is_uninit,
                      clang::diag::Severity::Warning, SourceLocation());
     return Result;
   }
 
-  Interpreter::CompilationResult
+  Interpreter::ECompilationOutcome
   Interpreter::declare(const std::string& input, Transaction** T/*=0 */) {
     CompilationOptions CO;
     CO.DeclarationExtraction = 0;
@@ -602,7 +602,7 @@ namespace cling {
     return DeclareInternal(input, CO, T);
   }
 
-  Interpreter::CompilationResult
+  Interpreter::ECompilationOutcome
   Interpreter::evaluate(const std::string& input, Value& V) {
     // Here we might want to enforce further restrictions like: Only one
     // ExprStmt can be evaluated and etc. Such enforcement cannot happen in the
@@ -616,7 +616,7 @@ namespace cling {
     return EvaluateInternal(input, CO, &V);
   }
 
-  Interpreter::CompilationResult
+  Interpreter::ECompilationOutcome
   Interpreter::echo(const std::string& input, Value* V /* = 0 */) {
     CompilationOptions CO;
     CO.DeclarationExtraction = 0;
@@ -626,7 +626,7 @@ namespace cling {
     return EvaluateInternal(input, CO, V);
   }
 
-  Interpreter::CompilationResult
+  Interpreter::ECompilationOutcome
   Interpreter::execute(const std::string& input) {
     CompilationOptions CO;
     CO.DeclarationExtraction = 0;
@@ -637,7 +637,7 @@ namespace cling {
     return EvaluateInternal(input, CO);
   }
 
-  Interpreter::CompilationResult Interpreter::emitAllDecls(Transaction* T) {
+  Interpreter::ECompilationOutcome Interpreter::emitAllDecls(Transaction* T) {
     assert(!isInSyntaxOnlyMode() && "No CodeGenerator?");
     m_IncrParser->emitTransaction(T);
     m_IncrParser->addTransaction(T);
@@ -852,7 +852,7 @@ namespace cling {
     bool savedAccessControl = LO.AccessControl;
     LO.AccessControl = withAccessControl;
     cling::Transaction* T = 0;
-    cling::Interpreter::CompilationResult CR = declare(code, &T);
+    cling::Interpreter::ECompilationOutcome CR = declare(code, &T);
     LO.AccessControl = savedAccessControl;
 
     Diag.setSeverity(clang::diag::ext_nested_name_member_ref_lookup_ambiguous,
@@ -932,7 +932,7 @@ namespace cling {
     return name.startswith(utils::Synthesize::UniquePrefix);
   }
 
-  Interpreter::CompilationResult
+  Interpreter::ECompilationOutcome
   Interpreter::DeclareInternal(const std::string& input,
                                const CompilationOptions& CO,
                                Transaction** T /* = 0 */) const {
@@ -948,7 +948,7 @@ namespace cling {
     return Interpreter::kSuccess;
   }
 
-  Interpreter::CompilationResult
+  Interpreter::ECompilationOutcome
   Interpreter::EvaluateInternal(const std::string& input,
                                 CompilationOptions CO,
                                 Value* V, /* = 0 */
@@ -1035,7 +1035,7 @@ namespace cling {
     return getDynamicLibraryManager()->lookupLibrary(canonicalFile);
   }
 
-  Interpreter::CompilationResult
+  Interpreter::ECompilationOutcome
   Interpreter::loadFile(const std::string& filename,
                         bool allowSharedLib /*=true*/,
                         Transaction** T /*= 0*/) {
@@ -1057,7 +1057,7 @@ namespace cling {
 
     std::string code;
     code += "#include \"" + filename + "\"";
-    CompilationResult res = declare(code, T);
+    ECompilationOutcome res = declare(code, T);
     return res;
   }
 

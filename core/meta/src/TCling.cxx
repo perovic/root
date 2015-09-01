@@ -1720,7 +1720,7 @@ void TCling::RegisterModule(const char* modulename,
 
       if (!hasHeaderParsingOnDemand){
          const cling::Transaction* watermark = fInterpreter->getLastTransaction();
-         cling::Interpreter::CompilationResult compRes = fInterpreter->parseForModule(code.Data());
+         cling::Interpreter::ECompilationOutcome compRes = fInterpreter->parseForModule(code.Data());
          if (isACLiC) {
             // Register an unload point.
             fMetaProcessor->registerUnloadPoint(watermark, headers[0]);
@@ -1882,7 +1882,7 @@ Long_t TCling::ProcessLine(const char* line, EErrorCode* error/*=0*/)
    int indent = 0;
    // This will hold the resulting value of the evaluation the given line.
    cling::Value result;
-   cling::Interpreter::CompilationResult compRes = cling::Interpreter::kSuccess;
+   cling::Interpreter::ECompilationOutcome compRes = cling::Interpreter::kSuccess;
    if (!strncmp(sLine.Data(), ".L", 2) || !strncmp(sLine.Data(), ".x", 2) ||
        !strncmp(sLine.Data(), ".X", 2)) {
       // If there was a trailing "+", then CINT compiled the code above,
@@ -2720,7 +2720,7 @@ Int_t TCling::Load(const char* filename, Bool_t system)
       else {
          // For the non system libs, we'd like to be able to unload them.
          // FIXME: Here we lose the information about kLoadLibAlreadyLoaded case.
-         cling::Interpreter::CompilationResult compRes;
+         cling::Interpreter::ECompilationOutcome compRes;
          cling::MetaProcessor::MaybeRedirectOutputRAII RAII(fMetaProcessor);
          fMetaProcessor->process(Form(".L %s", canonLib.c_str()), compRes, /*cling::Value*/0);
          if (compRes == cling::Interpreter::kSuccess)
@@ -2794,7 +2794,7 @@ Long_t TCling::Calc(const char* line, EErrorCode* error)
       *error = TInterpreter::kNoError;
    }
    cling::Value valRef;
-   cling::Interpreter::CompilationResult cr = fInterpreter->evaluate(line, valRef);
+   cling::Interpreter::ECompilationOutcome cr = fInterpreter->evaluate(line, valRef);
    if (cr != cling::Interpreter::kSuccess) {
       // Failure in compilation.
       if (error) {
@@ -5080,7 +5080,7 @@ Int_t TCling::AutoLoad(const char *cls, Bool_t knowDictNotLoaded /* = kFALSE */)
 ////////////////////////////////////////////////////////////////////////////////
 /// Parse the payload or header.
 
-static cling::Interpreter::CompilationResult ExecAutoParse(const char *what,
+static cling::Interpreter::ECompilationOutcome ExecAutoParse(const char *what,
                                                            Bool_t header,
                                                            cling::Interpreter *interpreter)
 {
@@ -5118,7 +5118,7 @@ static cling::Interpreter::CompilationResult ExecAutoParse(const char *what,
             + gInterpreterClassDef +
             "#endif");
 
-   cling::Interpreter::CompilationResult cr;
+   cling::Interpreter::ECompilationOutcome cr;
    {
       // scope within which diagnostics are de-activated
       // For now we disable diagnostics because we saw them already at
@@ -6044,7 +6044,7 @@ int TCling::GetSecurityError() const
 
 int TCling::LoadFile(const char* path) const
 {
-   cling::Interpreter::CompilationResult compRes;
+   cling::Interpreter::ECompilationOutcome compRes;
    cling::MetaProcessor::MaybeRedirectOutputRAII RAII(fMetaProcessor);
    fMetaProcessor->process(TString::Format(".L %s", path), compRes, /*cling::Value*/0);
    return compRes == cling::Interpreter::kFailure;
@@ -6173,7 +6173,7 @@ int TCling::UnloadFile(const char* path) const
       canonical = path;
    }
    // Unload a shared library or a source file.
-   cling::Interpreter::CompilationResult compRes;
+   cling::Interpreter::ECompilationOutcome compRes;
    cling::MetaProcessor::MaybeRedirectOutputRAII RAII(fMetaProcessor);
    fMetaProcessor->process(Form(".U %s", canonical.c_str()), compRes, /*cling::Value*/0);
    return compRes == cling::Interpreter::kFailure;

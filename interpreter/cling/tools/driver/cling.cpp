@@ -54,7 +54,7 @@ int main( int argc, char **argv ) {
   if (!Interactive) {
     for (size_t I = 0, N = Inputs.size(); I < N; ++I) {
       std::string cmd;
-      cling::Interpreter::CompilationResult compRes;
+      cling::Interpreter::ECompilationOutcome compRes;
       if (!interp.lookupFileOrLibrary(Inputs[I]).empty()) {
         std::ifstream infile(interp.lookupFileOrLibrary(Inputs[I]));
         std::string line;

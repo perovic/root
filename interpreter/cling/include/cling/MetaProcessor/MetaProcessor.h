@@ -142,7 +142,7 @@ namespace cling {
     ///\returns -1 if quit was requiested.
     ///
     int process(const char* input_line,
-                Interpreter::CompilationResult& compRes,
+                Interpreter::ECompilationOutcome& compRes,
                 cling::Value* result);
 
     ///\brief When continuation is requested, this cancels and ignores previous
@@ -162,7 +162,7 @@ namespace cling {
     ///
     ///\returns result of the compilation.
     ///
-    Interpreter::CompilationResult
+    Interpreter::ECompilationOutcome
     readInputFromFile(llvm::StringRef filename,
                       Value* result,
                       bool ignoreOutmostBlock = false);

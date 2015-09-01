@@ -137,7 +137,7 @@ namespace cling {
           break;
         }
 
-        cling::Interpreter::CompilationResult compRes;
+        cling::Interpreter::ECompilationOutcome compRes;
         MetaProcessor::MaybeRedirectOutputRAII RAII(m_MetaProcessor.get());
         int indent
           = m_MetaProcessor->process(line.c_str(), compRes, 0/*result*/);

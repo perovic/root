@@ -99,7 +99,7 @@ namespace cling {
     ///\brief Describes the return result of the different routines that do the
     /// incremental compilation.
     ///
-    enum CompilationResult {
+    enum ECompilationOutcome {
       kSuccess,
       kFailure,
       kMoreInputExpected
@@ -198,7 +198,7 @@ namespace cling {
     ///
     ///\returns Whether the operation was fully successful.
     ///
-    CompilationResult DeclareInternal(const std::string& input,
+    ECompilationOutcome DeclareInternal(const std::string& input,
                                       const CompilationOptions& CO,
                                       Transaction** T = 0) const;
 
@@ -214,7 +214,7 @@ namespace cling {
     ///
     ///\returns Whether the operation was fully successful.
     ///
-    CompilationResult EvaluateInternal(const std::string& input,
+    ECompilationOutcome EvaluateInternal(const std::string& input,
                                        CompilationOptions CO,
                                        Value* V = 0,
                                        Transaction** T = 0);
@@ -405,7 +405,7 @@ namespace cling {
     ///
     ///\returns Whether the operation was fully successful.
     ///
-    CompilationResult process(const std::string& input, Value* V = 0,
+    ECompilationOutcome process(const std::string& input, Value* V = 0,
                               Transaction** T = 0);
 
     ///\brief Parses input line, which doesn't contain statements. No code
@@ -419,7 +419,7 @@ namespace cling {
     ///
     ///\returns Whether the operation was fully successful.
     ///
-    CompilationResult parse(const std::string& input,
+    ECompilationOutcome parse(const std::string& input,
                             Transaction** T = 0) const;
 
     ///\brief Looks for a already generated PCM for the given header file and
@@ -430,7 +430,7 @@ namespace cling {
     ///
     ///\returns Whether the operation was fully successful.
     ///
-    CompilationResult loadModuleForHeader(const std::string& headerFile);
+    ECompilationOutcome loadModuleForHeader(const std::string& headerFile);
 
     ///\brief Parses input line, which doesn't contain statements. Code
     /// generation needed to make the module functional.
@@ -443,7 +443,7 @@ namespace cling {
     ///
     ///\returns Whether the operation was fully successful.
     ///
-    CompilationResult parseForModule(const std::string& input);
+    ECompilationOutcome parseForModule(const std::string& input);
 
     ///\brief Compiles input line, which doesn't contain statements.
     ///
@@ -456,7 +456,7 @@ namespace cling {
     ///
     ///\returns Whether the operation was fully successful.
     ///
-    CompilationResult declare(const std::string& input, Transaction** T = 0);
+    ECompilationOutcome declare(const std::string& input, Transaction** T = 0);
 
     ///\brief Compiles input line, which contains only expressions.
     ///
@@ -470,7 +470,7 @@ namespace cling {
     ///
     ///\returns Whether the operation was fully successful.
     ///
-    CompilationResult evaluate(const std::string& input, Value& V);
+    ECompilationOutcome evaluate(const std::string& input, Value& V);
 
     ///\brief Compiles input line, which contains only expressions and prints
     /// out the result of its execution.
@@ -485,7 +485,7 @@ namespace cling {
     ///
     ///\returns Whether the operation was fully successful.
     ///
-    CompilationResult echo(const std::string& input, Value* V = 0);
+    ECompilationOutcome echo(const std::string& input, Value* V = 0);
 
     ///\brief Compiles input line and runs.
     ///
@@ -497,7 +497,7 @@ namespace cling {
     ///
     ///\returns Whether the operation was fully successful.
     ///
-    CompilationResult execute(const std::string& input);
+    ECompilationOutcome execute(const std::string& input);
 
     ///\brief Generates code for all Decls of a transaction.
     ///
@@ -506,7 +506,7 @@ namespace cling {
     ///
     ///\returns Whether the operation was fully successful.
     ///
-    CompilationResult emitAllDecls(Transaction* T);
+    ECompilationOutcome emitAllDecls(Transaction* T);
 
     ///\brief Looks up a file or library according to the current interpreter
     /// include paths and system include paths.
@@ -525,7 +525,7 @@ namespace cling {
     ///\param [out] T -  Transaction containing the loaded file.
     ///\returns result of the compilation.
     ///
-    CompilationResult loadFile(const std::string& filename,
+    ECompilationOutcome loadFile(const std::string& filename,
                                bool allowSharedLib = true,
                                Transaction** T = 0);
 

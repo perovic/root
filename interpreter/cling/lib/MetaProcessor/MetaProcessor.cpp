@@ -126,7 +126,7 @@ namespace cling {
   MetaProcessor::~MetaProcessor() {}
 
   int MetaProcessor::process(const char* input_text,
-                             Interpreter::CompilationResult& compRes,
+                             Interpreter::ECompilationOutcome& compRes,
                              Value* result) {
     if (result)
       *result = Value();
@@ -183,7 +183,7 @@ namespace cling {
     return m_InputValidator->getExpectedIndent();
   }
 
-  Interpreter::CompilationResult
+  Interpreter::ECompilationOutcome
   MetaProcessor::readInputFromFile(llvm::StringRef filename,
                                    Value* result,
                                    bool ignoreOutmostBlock /*=false*/) {
@@ -281,7 +281,7 @@ namespace cling {
     bool topmost = !m_TopExecutingFile.data();
     if (topmost)
       m_TopExecutingFile = m_CurrentlyExecutingFile;
-    Interpreter::CompilationResult ret;
+    Interpreter::ECompilationOutcome ret;
     // We don't want to value print the results of a unnamed macro.
     content = "#line 2 \"" + filename.str() + "\" \n" + content;
     if (process((content + ";").c_str(), ret, result)) {
