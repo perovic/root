@@ -9,6 +9,8 @@ ROOT_GLOB_HEADERS(headers ${CMAKE_CURRENT_SOURCE_DIR}/inc/*.h)
 set(TextInput_dict_headers ${headers} PARENT_SCOPE)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/inc)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../base/inc)
 ROOT_OBJECT_LIBRARY(TextInput ${sources})
 
 ROOT_INSTALL_HEADERS()

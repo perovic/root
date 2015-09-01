@@ -12,9 +12,18 @@
 
 #include <memory>
 
+namespace {
+  class UIPrintPager;
+}
+
+namespace textinput {
+  class TextInput;
+}
+
 namespace cling {
   class Interpreter;
   class MetaProcessor;
+  class IPrintPager;
 
   ///\brief Makes the interpreter interactive
   ///
@@ -25,6 +34,7 @@ namespace cling {
     ///\brief Prints cling's startup logo
     ///
     void PrintLogo();
+    std::unique_ptr<IPrintPager> makePrintPager(textinput::TextInput *TI);
   public:
     UserInterface(Interpreter& interp);
     ~UserInterface();

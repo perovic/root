@@ -24,6 +24,7 @@
 #include "cling/Interpreter/LookupHelper.h"
 #include "cling/Interpreter/Transaction.h"
 #include "cling/Interpreter/Value.h"
+#include "cling/Interpreter/IPrintPager.h"
 #include "cling/Utils/AST.h"
 #include "cling/Interpreter/AutoloadCallback.h"
 

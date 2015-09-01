@@ -1,4 +1,4 @@
-#ifndef _WIN32
+#ifndef WIN32
 
 //===--- TerminalDisplayUnix.cpp - Output To UNIX Terminal ------*- C++ -*-===//
 //
@@ -336,4 +336,4 @@ namespace textinput {
 
 }
 
-#endif // #ifndef _WIN32
+#endif // #ifndef WIN32

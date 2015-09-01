@@ -70,6 +70,7 @@ namespace textinput {
     char GetLastKey() const { return fLastKey; }
     const std::string& GetInput();
     void TakeInput(std::string& input); // Take and reset input
+    char ReadHiddenCharBlocking();
     bool AtEOL() const { return fLastReadResult == kRRReadEOLDelimiter || AtEOF(); }
     bool AtEOF() const { return fLastReadResult == kRREOF; }
     bool HavePendingInput() const;
@@ -91,6 +92,7 @@ namespace textinput {
   private:
     void EmitSignal(char c, EditorRange& r);
     void ProcessNewInput(const InputData& in, EditorRange& r);
+    void ProcessNewHiddenInput(const InputData& in, EditorRange& R);
     void DisplayNewInput(EditorRange& r, size_t& oldCursorPos);
 
     bool fMasked; // whether input should be shown

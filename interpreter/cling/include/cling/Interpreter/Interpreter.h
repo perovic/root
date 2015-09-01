@@ -66,6 +66,7 @@ namespace cling {
   class LookupHelper;
   class Value;
   class Transaction;
+  class IPrintPager;
 
   ///\brief Class that implements the interpreter-like behavior. It manages the
   /// incremental compilation.
@@ -174,6 +175,7 @@ namespace cling {
     /// Enabled by default if stdin is attached to terminal.
     ///
     bool m_InteractivePrintEnabled;
+    std::unique_ptr<IPrintPager> m_PrintPager;
 
     ///\brief Interpreter callbacks.
     ///
@@ -552,6 +554,9 @@ namespace cling {
 
     bool isInteractivePrintEnabled() const { return m_InteractivePrintEnabled; }
     void enableInteractivePrint(bool iprint = true) { m_InteractivePrintEnabled = iprint; }
+
+    IPrintPager* getPrintPager() const { return m_PrintPager.get(); }
+    void setPrintPager(std::unique_ptr<IPrintPager> uptr) { m_PrintPager.swap(uptr); }
 
     clang::CompilerInstance* getCI() const;
     clang::Sema& getSema() const;

@@ -70,7 +70,7 @@ namespace textinput {
     size_t WriteWrapped(Range::EPromptUpdate PromptUpdate, bool masked,
                         size_t offset, size_t len = (size_t)-1);
     size_t WriteWrappedTextPart(const Text &text, size_t TextOffset,
-                                size_t WriteOffset, size_t Requested);
+                                size_t WriteOffset, size_t NumRequested);
     virtual void SetColor(char CIdx, const Color& C) = 0;
     virtual void WriteRawString(const char* text, size_t len) = 0;
     virtual void ActOnEOL() {}

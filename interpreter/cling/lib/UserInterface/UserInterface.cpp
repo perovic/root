@@ -11,6 +11,7 @@
 
 #include "cling/UserInterface/CompilationException.h"
 #include "cling/Interpreter/RuntimeException.h"
+#include "cling/Interpreter/IPrintPager.h"
 #include "cling/MetaProcessor/MetaProcessor.h"
 #include "textinput/TextInput.h"
 #include "textinput/StreamReader.h"
@@ -118,6 +119,7 @@ namespace cling {
     std::unique_ptr<TerminalDisplay> D(TerminalDisplay::Create());
     TextInput TI(*R, *D, histfilePath.empty() ? 0 : histfilePath.c_str());
     m_MetaProcessor->getInterpreter().enableInteractivePrint(D->IsTTY());
+    m_MetaProcessor->getInterpreter().setPrintPager(makePrintPager(&TI));
 
     TI.SetPrompt("[cling]$ ");
     std::string line;

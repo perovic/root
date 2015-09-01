@@ -75,6 +75,29 @@ namespace textinput {
     } // else keep EOF.
   }
 
+  char
+  TextInput::ReadHiddenCharBlocking() {
+    InputData in;
+    size_t toRead = 1;
+    size_t nRead = 0;
+//    bool tempfNeedPromptRedraw = fNeedPromptRedraw;
+//    fNeedPromptRedraw = false;
+    GrabInputOutput();
+
+    EditorRange R;
+    for (std::vector<Reader*>::const_iterator iR
+        = fContext->GetReaders().begin(),
+             iE = fContext->GetReaders().end();
+         iR != iE && nRead < toRead; ++iR) {
+      (*iR)->ReadInput(nRead, in);
+      ProcessNewHiddenInput(in, R);
+    }
+    ReleaseInputOutput();
+//    fNeedPromptRedraw = tempfNeedPromptRedraw;
+    return in.GetRaw();
+  }
+
+  // **** UNUSED ****
   bool
   TextInput::HavePendingInput() const {
     if (!fActive) {
@@ -175,6 +198,41 @@ namespace textinput {
         }
       }
     }
+  }
+
+  void
+  TextInput::ProcessNewHiddenInput(const InputData& in, EditorRange& R) {
+    // in was read, process it.
+    fLastKey = in.GetRaw(); // rough approximation
+    Editor::Command Cmd = fContext->GetKeyBinding()->ToCommand(in);
+    if (Cmd.GetKind() == Editor::kCKControl && Cmd.GetChar() == 3) {
+      // If there are modifications in the queue, process them now.
+      EmitSignal(Cmd.GetChar(), R);
+    }
+//    else if (Cmd.GetKind() == Editor::kCKCommand
+//               && Cmd.GetCommandID() == Editor::kCmdWindowResize) {
+//      std::for_each(fContext->GetDisplays().begin(),
+//                    fContext->GetDisplays().end(),
+//                    std::mem_fun(&Display::NotifyWindowChange));
+//    } else {
+//      if (!in.IsRaw() && in.GetExtendedInput() == InputData::kEIEOF) {
+//        fLastReadResult = kRREOF;
+//        return;
+//      } else {
+//        Editor::EProcessResult Res = fContext->GetEditor()->Process(Cmd, R);
+//        if (Res == Editor::kPRError) {
+//          // Signal displays that an error has occurred.
+//          std::for_each(fContext->GetDisplays().begin(),
+//                        fContext->GetDisplays().end(),
+//                        std::mem_fun(&Display::NotifyError));
+//        } else if (Cmd.GetKind() == Editor::kCKCommand
+//                   && (Cmd.GetCommandID() == Editor::kCmdEnter ||
+//                       Cmd.GetCommandID() == Editor::kCmdHistReplay)) {
+//          fLastReadResult = kRRReadEOLDelimiter;
+//          return;
+//        }
+//      }
+//    }
   }
 
   void

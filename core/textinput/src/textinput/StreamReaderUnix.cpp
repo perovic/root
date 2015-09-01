@@ -13,7 +13,7 @@
 //  Axel Naumann <axel@cern.ch>, 2011-05-12
 //===----------------------------------------------------------------------===//
 
-#ifndef _WIN32
+#ifndef WIN32
 
 #include "textinput/StreamReaderUnix.h"
 

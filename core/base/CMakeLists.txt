@@ -9,6 +9,9 @@ include_directories(${CMAKE_SOURCE_DIR}/graf3d/g3d/inc)
 include_directories(${CMAKE_SOURCE_DIR}/gui/gui/inc)
 include_directories(${CMAKE_SOURCE_DIR}/io/io/inc)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../textinput/src)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/inc)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../cont/inc)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../meta/inc)
 
 ROOT_GENERATE_DICTIONARY(G__Core
                          ${Base_dict_headers}
