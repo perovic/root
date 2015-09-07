@@ -78,6 +78,13 @@ namespace cling {
       kSTDBOTH = 3
     };
 
+    struct MetaProcessingResult {
+
+      Interpreter::CompilationResult fCR;
+      int fExpectedIndent;
+      bool fQuitRequested;
+    };
+
   public:
     ///\brief Class to be created for each processing input to be
     /// able to redirect std.
@@ -141,9 +148,7 @@ namespace cling {
     /// have in case of multi input mode.
     ///\returns -1 if quit was requiested.
     ///
-    int process(const char* input_line,
-                Interpreter::ECompilationOutcome& compRes,
-                cling::Value* result);
+    MetaProcessingResult process(const char* input_line);
 
     ///\brief When continuation is requested, this cancels and ignores previous
     /// input, resetting the continuation to a new line.
@@ -162,9 +167,8 @@ namespace cling {
     ///
     ///\returns result of the compilation.
     ///
-    Interpreter::ECompilationOutcome
+    MetaProcessingResult
     readInputFromFile(llvm::StringRef filename,
-                      Value* result,
                       bool ignoreOutmostBlock = false);
     ///\brief Set the stdout and stderr stream to the appropriate file.
     ///

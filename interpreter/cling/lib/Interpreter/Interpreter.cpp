@@ -489,27 +489,29 @@ namespace cling {
   ///\brief Maybe transform the input line to implement cint command line
   /// semantics (declarations are global) and compile to produce a module.
   ///
-  Interpreter::ECompilationOutcome
-  Interpreter::process(const std::string& input, Value* V /* = 0 */,
-                       Transaction** T /* = 0 */) {
+  Interpreter::CompilationResult
+  Interpreter::process(const std::string& input) {
     if (isRawInputEnabled() || !ShouldWrapInput(input))
-      return declare(input, T);
+      return declare(input);
 
     CompilationOptions CO;
     CO.DeclarationExtraction = 1;
     CO.ValuePrinting = CompilationOptions::VPAuto;
-    CO.ResultEvaluation = (bool)V;
+    // FIXME BORIS is this OK?
+//    CO.ResultEvaluation = (bool)V;
+    CO.ResultEvaluation = 1;
     CO.DynamicScoping = isDynamicLookupEnabled();
     CO.Debug = isPrintingDebug();
-    if (EvaluateInternal(input, CO, V, T) == Interpreter::kFailure) {
-      return Interpreter::kFailure;
+    CompilationResult result = EvaluateInternal(input, CO);
+    if (result.fOutcome == Interpreter::kFailure) {
+      return result;
     }
-
-    return Interpreter::kSuccess;
+    result.fOutcome = Interpreter::kSuccess;
+    return result;
   }
 
-  Interpreter::ECompilationOutcome
-  Interpreter::parse(const std::string& input, Transaction** T /*=0*/) const {
+  Interpreter::CompilationResult
+  Interpreter::parse(const std::string& input) const {
     CompilationOptions CO;
     CO.CodeGeneration = 0;
     CO.DeclarationExtraction = 0;
@@ -518,7 +520,7 @@ namespace cling {
     CO.DynamicScoping = isDynamicLookupEnabled();
     CO.Debug = isPrintingDebug();
 
-    return DeclareInternal(input, CO, T);
+    return DeclareInternal(input, CO);
   }
 
   Interpreter::ECompilationOutcome
@@ -566,7 +568,7 @@ namespace cling {
     return Interpreter::kFailure;
   }
 
-  Interpreter::ECompilationOutcome
+  Interpreter::CompilationResult
   Interpreter::parseForModule(const std::string& input) {
     CompilationOptions CO;
     CO.CodeGeneration = 1;
@@ -584,14 +586,14 @@ namespace cling {
     DiagnosticsEngine& Diag = getCI()->getDiagnostics();
     Diag.setSeverity(clang::diag::warn_field_is_uninit,
                      clang::diag::Severity::Ignored, SourceLocation());
-    ECompilationOutcome Result = DeclareInternal(input, CO);
+    CompilationResult Result = DeclareInternal(input, CO);
     Diag.setSeverity(clang::diag::warn_field_is_uninit,
                      clang::diag::Severity::Warning, SourceLocation());
     return Result;
   }
 
-  Interpreter::ECompilationOutcome
-  Interpreter::declare(const std::string& input, Transaction** T/*=0 */) {
+  Interpreter::CompilationResult
+  Interpreter::declare(const std::string& input) {
     CompilationOptions CO;
     CO.DeclarationExtraction = 0;
     CO.ValuePrinting = 0;
@@ -599,11 +601,11 @@ namespace cling {
     CO.DynamicScoping = isDynamicLookupEnabled();
     CO.Debug = isPrintingDebug();
 
-    return DeclareInternal(input, CO, T);
+    return DeclareInternal(input, CO);
   }
 
-  Interpreter::ECompilationOutcome
-  Interpreter::evaluate(const std::string& input, Value& V) {
+  Interpreter::CompilationResult
+  Interpreter::evaluate(const std::string& input) {
     // Here we might want to enforce further restrictions like: Only one
     // ExprStmt can be evaluated and etc. Such enforcement cannot happen in the
     // worker, because it is used from various places, where there is no such
@@ -613,20 +615,22 @@ namespace cling {
     CO.ValuePrinting = 0;
     CO.ResultEvaluation = 1;
 
-    return EvaluateInternal(input, CO, &V);
+    return EvaluateInternal(input, CO);
   }
 
-  Interpreter::ECompilationOutcome
-  Interpreter::echo(const std::string& input, Value* V /* = 0 */) {
+  Interpreter::CompilationResult
+  Interpreter::echo(const std::string& input) {
     CompilationOptions CO;
     CO.DeclarationExtraction = 0;
     CO.ValuePrinting = CompilationOptions::VPEnabled;
-    CO.ResultEvaluation = (bool)V;
+    // FIXME BORIS is this OK?
+//    CO.ResultEvaluation = (bool)V;
+    CO.ResultEvaluation = 1;
 
-    return EvaluateInternal(input, CO, V);
+    return EvaluateInternal(input, CO);
   }
 
-  Interpreter::ECompilationOutcome
+  Interpreter::CompilationResult
   Interpreter::execute(const std::string& input) {
     CompilationOptions CO;
     CO.DeclarationExtraction = 0;
@@ -851,18 +855,17 @@ namespace cling {
     LangOptions& LO = const_cast<LangOptions&>(getCI()->getLangOpts());
     bool savedAccessControl = LO.AccessControl;
     LO.AccessControl = withAccessControl;
-    cling::Transaction* T = 0;
-    cling::Interpreter::ECompilationOutcome CR = declare(code, &T);
+    cling::Interpreter::CompilationResult CR = declare(code);
     LO.AccessControl = savedAccessControl;
 
     Diag.setSeverity(clang::diag::ext_nested_name_member_ref_lookup_ambiguous,
                      clang::diag::Severity::Warning, SourceLocation());
 
-    if (CR != cling::Interpreter::kSuccess)
+    if (CR.fOutcome != cling::Interpreter::kSuccess)
       return 0;
 
-    for (cling::Transaction::const_iterator I = T->decls_begin(),
-           E = T->decls_end(); I != E; ++I) {
+    for (cling::Transaction::const_iterator I = CR.fTransaction->decls_begin(),
+           E = CR.fTransaction->decls_end(); I != E; ++I) {
       if (I->m_Call != cling::Transaction::kCCIHandleTopLevelDecl)
         continue;
       if (const LinkageSpecDecl* LSD
@@ -932,27 +935,22 @@ namespace cling {
     return name.startswith(utils::Synthesize::UniquePrefix);
   }
 
-  Interpreter::ECompilationOutcome
+  Interpreter::CompilationResult
   Interpreter::DeclareInternal(const std::string& input,
-                               const CompilationOptions& CO,
-                               Transaction** T /* = 0 */) const {
+                               const CompilationOptions& CO) const {
     StateDebuggerRAII stateDebugger(this);
 
     IncrementalParser::ParseResultTransaction PRT
       = m_IncrParser->Compile(input, CO);
     if (PRT.getInt() == IncrementalParser::kFailed)
-      return Interpreter::kFailure;
+      return CompilationResult{kFailure, "", {}, 0}; // FIXME doesn't need a Value?
 
-    if (T)
-      *T = PRT.getPointer();
-    return Interpreter::kSuccess;
+    return CompilationResult{kSuccess, "", {}, PRT.getPointer()}; // FIXME doesn't need a Value?
   }
 
-  Interpreter::ECompilationOutcome
+  Interpreter::CompilationResult
   Interpreter::EvaluateInternal(const std::string& input,
-                                CompilationOptions CO,
-                                Value* V, /* = 0 */
-                                Transaction** T /* = 0 */) {
+                                CompilationOptions CO) {
     StateDebuggerRAII stateDebugger(this);
 
     // Wrap the expression
@@ -972,41 +970,37 @@ namespace cling {
               || lastT->getState() == Transaction::kRolledBack
               || lastT->getState() == Transaction::kRolledBackWithErrors)
              && "Not committed?");
-      if (V)
-        *V = Value();
-      return kFailure;
+      return CompilationResult{kFailure, "", {}, 0};
     }
 
     // Might not have a Transaction
     if (PRT.getInt() == IncrementalParser::kFailed) {
-      if (V)
-        *V = Value();
-      return kFailure;
+      return CompilationResult{kFailure, "", {}, 0};
     }
 
     if (!lastT) {
       // Empty transactions are good, too!
-      if (V)
-        *V = Value();
-      return kSuccess;
+      return CompilationResult{kSuccess, "", {}, 0};
     }
 
     Value resultV;
-    if (!V)
-      V = &resultV;
     if (!lastT->getWrapperFD()) // no wrapper to run
-      return Interpreter::kSuccess;
-    else if (RunFunction(lastT->getWrapperFD(), V) < kExeFirstError){
+      return CompilationResult{kSuccess, "", resultV, 0};
+    else if (RunFunction(lastT->getWrapperFD(), &resultV) < kExeFirstError){
+      // FIXME BORIS REFACTOR
+      CompilationResult result = CompilationResult{kSuccess, "", resultV, 0};
       if (lastT->getCompilationOpts().ValuePrinting
           != CompilationOptions::VPDisabled
-          && V->isValid()
+          && resultV.isValid()
           // the !V->needsManagedAllocation() case is handled by
           // dumpIfNoStorage.
-          && V->needsManagedAllocation())
-        V->dump();
-      return Interpreter::kSuccess;
+          && resultV.needsManagedAllocation()) {
+        result.fOutput = resultV.print();
+        resultV.dump();
+      }
+      return result;
     }
-    return Interpreter::kSuccess;
+    return CompilationResult{kSuccess, "", resultV, 0};
   }
 
   std::string Interpreter::lookupFileOrLibrary(llvm::StringRef file) {
@@ -1035,29 +1029,28 @@ namespace cling {
     return getDynamicLibraryManager()->lookupLibrary(canonicalFile);
   }
 
-  Interpreter::ECompilationOutcome
+  Interpreter::CompilationResult
   Interpreter::loadFile(const std::string& filename,
-                        bool allowSharedLib /*=true*/,
-                        Transaction** T /*= 0*/) {
+                        bool allowSharedLib /*=true*/) {
     DynamicLibraryManager* DLM = getDynamicLibraryManager();
     std::string canonicalLib = DLM->lookupLibrary(filename);
     if (allowSharedLib && !canonicalLib.empty()) {
       switch (DLM->loadLibrary(filename, /*permanent*/false)) {
       case DynamicLibraryManager::kLoadLibSuccess: // Intentional fall through
       case DynamicLibraryManager::kLoadLibAlreadyLoaded:
-        return kSuccess;
+        return CompilationResult{kSuccess, "", {}, 0};
       case DynamicLibraryManager::kLoadLibNotFound:
         assert(0 && "Cannot find library with existing canonical name!");
-        return kFailure;
+        return CompilationResult{kFailure, "", {}, 0};
       default:
         // Not a source file (canonical name is non-empty) but can't load.
-        return kFailure;
+        return CompilationResult{kFailure, "", {}, 0};
       }
     }
 
     std::string code;
     code += "#include \"" + filename + "\"";
-    ECompilationOutcome res = declare(code, T);
+    CompilationResult res = declare(code);
     return res;
   }
 
@@ -1094,15 +1087,15 @@ namespace cling {
     Sema::ContextRAII pushDC(TheSema,
                              TheSema.getASTContext().getTranslationUnitDecl());
 
-    Value Result;
+    CompilationResult Result;
     getCallbacks()->SetIsRuntime(true);
     if (ValuePrinterReq)
-      echo(expr, &Result);
+      Result = echo(expr);
     else
-      evaluate(expr, Result);
+      Result = evaluate(expr);
     getCallbacks()->SetIsRuntime(false);
 
-    return Result;
+    return Result.fValue;
   }
 
   void Interpreter::setCallbacks(std::unique_ptr<InterpreterCallbacks> C) {

@@ -1495,15 +1495,14 @@ void TCling::RegisterModule(const char* modulename,
    for (const char** inclPath = includePaths; *inclPath; ++inclPath) {
       TCling::AddIncludePath(*inclPath);
    }
-   cling::Transaction* T = 0;
    // Put the template decls and the number of arguments to skip in the TNormalizedCtxt
    for (auto& fwdDeclArgToSkipPair : fwdDeclsArgToSkip){
       const std::string& fwdDecl = fwdDeclArgToSkipPair.first;
       const int nArgsToSkip = fwdDeclArgToSkipPair.second;
-      auto compRes = fInterpreter->declare(fwdDecl.c_str(), &T);
-      assert(cling::Interpreter::kSuccess == compRes &&
+      auto compRes = fInterpreter->declare(fwdDecl.c_str());
+      assert(cling::Interpreter::kSuccess == compRes.fOutcome &&
             "A fwd declaration could not be compiled");
-      if (compRes!=cling::Interpreter::kSuccess){
+      if (compRes.fOutcome!=cling::Interpreter::kSuccess){
          Warning("TCling::RegisterModule",
                "Problems in declaring string '%s' were encountered.",
                fwdDecl.c_str()) ;
@@ -1511,7 +1510,7 @@ void TCling::RegisterModule(const char* modulename,
       }
 
       // Drill through namespaces recursively until the template is found
-      if(ClassTemplateDecl* TD = FindTemplateInNamespace(T->getFirstDecl().getSingleDecl())){
+      if(ClassTemplateDecl* TD = FindTemplateInNamespace(compRes.fTransaction->getFirstDecl().getSingleDecl())){
          fNormalizedCtxt->AddTemplAndNargsToKeep(TD->getCanonicalDecl(), nArgsToSkip);
       }
 
@@ -1613,22 +1612,22 @@ void TCling::RegisterModule(const char* modulename,
       }
 
       if (fwdDeclsCodeLessEnums.size() != 0){ // Avoid the overhead if nothing is to be declared
-         auto compRes = fInterpreter->declare(fwdDeclsCodeLessEnums, &T);
-         assert(cling::Interpreter::kSuccess == compRes &&
+         auto compRes = fInterpreter->declare(fwdDeclsCodeLessEnums);
+         assert(cling::Interpreter::kSuccess == compRes.fOutcome &&
                "The forward declarations could not be compiled");
-         if (compRes!=cling::Interpreter::kSuccess){
+         if (compRes.fOutcome!=cling::Interpreter::kSuccess){
             Warning("TCling::RegisterModule",
                   "Problems in compiling forward declarations for module %s: '%s'",
                   modulename, fwdDeclsCodeLessEnums.c_str()) ;
          }
-         else if (T){
+         else if (compRes.fTransaction){
             // Loop over all decls in the transaction and go through them all
             // to mark them properly.
             // In order to do that, we first iterate over all the DelayedCallInfos
             // within the transaction. Then we loop over all Decls in the DeclGroupRef
             // contained in the DelayedCallInfos. For each decl, we traverse.
             ExtLexicalStorageAdder elsa;
-            for (auto dciIt = T->decls_begin();dciIt!=T->decls_end();dciIt++){
+            for (auto dciIt = compRes.fTransaction->decls_begin();dciIt!=compRes.fTransaction->decls_end();dciIt++){
                cling::Transaction::DelayCallInfo& dci = *dciIt;
                for(auto dit = dci.m_DGR.begin(); dit != dci.m_DGR.end(); ++dit) {
                   clang::Decl* declPtr = *dit;
@@ -1720,15 +1719,15 @@ void TCling::RegisterModule(const char* modulename,
 
       if (!hasHeaderParsingOnDemand){
          const cling::Transaction* watermark = fInterpreter->getLastTransaction();
-         cling::Interpreter::ECompilationOutcome compRes = fInterpreter->parseForModule(code.Data());
+         cling::Interpreter::CompilationResult compRes = fInterpreter->parseForModule(code.Data());
          if (isACLiC) {
             // Register an unload point.
             fMetaProcessor->registerUnloadPoint(watermark, headers[0]);
          }
 
-         assert(cling::Interpreter::kSuccess == compRes &&
+         assert(cling::Interpreter::kSuccess == compRes.fOutcome &&
                         "Payload code of a dictionary could not be parsed correctly.");
-         if (compRes!=cling::Interpreter::kSuccess) {
+         if (compRes.fOutcome!=cling::Interpreter::kSuccess) {
             Warning("TCling::RegisterModule",
                   "Problems declaring payload for module %s.", modulename) ;
          }
@@ -1882,7 +1881,8 @@ Long_t TCling::ProcessLine(const char* line, EErrorCode* error/*=0*/)
    int indent = 0;
    // This will hold the resulting value of the evaluation the given line.
    cling::Value result;
-   cling::Interpreter::ECompilationOutcome compRes = cling::Interpreter::kSuccess;
+   cling::MetaProcessor::MetaProcessingResult mpResult;
+   mpResult.fCR.fOutcome = cling::Interpreter::kSuccess;
    if (!strncmp(sLine.Data(), ".L", 2) || !strncmp(sLine.Data(), ".x", 2) ||
        !strncmp(sLine.Data(), ".X", 2)) {
       // If there was a trailing "+", then CINT compiled the code above,
@@ -1903,7 +1903,7 @@ Long_t TCling::ProcessLine(const char* line, EErrorCode* error/*=0*/)
          }
          if (!gSystem->CompileMacro(fname,aclicMode)) {
             // ACLiC failed.
-            compRes = cling::Interpreter::kFailure;
+            mpResult.fCR.fOutcome = cling::Interpreter::kFailure;
          } else {
             if (strncmp(sLine.Data(), ".L", 2) != 0) {
                // if execution was requested.
@@ -1919,7 +1919,7 @@ Long_t TCling::ProcessLine(const char* line, EErrorCode* error/*=0*/)
                const char *function = gSystem->BaseName(fname);
                mod_line = function + arguments + io;
                cling::MetaProcessor::MaybeRedirectOutputRAII RAII(fMetaProcessor);
-               indent = fMetaProcessor->process(mod_line, compRes, &result);
+               mpResult = fMetaProcessor->process(mod_line);
             }
          }
       } else {
@@ -1944,12 +1944,11 @@ Long_t TCling::ProcessLine(const char* line, EErrorCode* error/*=0*/)
          fCurExecutingMacros.push_back(fname);
          cling::MetaProcessor::MaybeRedirectOutputRAII RAII(fMetaProcessor);
          if (unnamedMacro) {
-            compRes = fMetaProcessor->readInputFromFile(fname.Data(), &result,
-                                                        true /*ignoreOutmostBlock*/);
+            mpResult = fMetaProcessor->readInputFromFile(fname.Data(), true /*ignoreOutmostBlock*/);
          } else {
             // No DynLookup for .x, .L of named macros.
             fInterpreter->enableDynamicLookup(false);
-            indent = fMetaProcessor->process(mod_line, compRes, &result);
+            mpResult = fMetaProcessor->process(mod_line);
          }
          fCurExecutingMacros.pop_back();
       }
@@ -1964,9 +1963,9 @@ Long_t TCling::ProcessLine(const char* line, EErrorCode* error/*=0*/)
          bool isInclusionDirective = sLine.Contains("\n#include");
          if (isInclusionDirective) {
             SuspendAutoParsing autoParseRaii(this);
-            indent = fMetaProcessor->process(sLine, compRes, &result);
+            mpResult = fMetaProcessor->process(sLine);
          } else {
-            indent = fMetaProcessor->process(sLine, compRes, &result);
+            mpResult = fMetaProcessor->process(sLine);
          }
       }
    }
@@ -1978,18 +1977,18 @@ Long_t TCling::ProcessLine(const char* line, EErrorCode* error/*=0*/)
       return 0;
    }
    if (error) {
-      switch (compRes) {
+      switch (mpResult.fCR.fOutcome) {
       case cling::Interpreter::kSuccess: *error = kNoError; break;
       case cling::Interpreter::kFailure: *error = kRecoverable; break;
       case cling::Interpreter::kMoreInputExpected: *error = kProcessing; break;
       }
    }
-   if (compRes == cling::Interpreter::kSuccess
+   if (mpResult.fCR.fOutcome == cling::Interpreter::kSuccess
        && result.isValid()
        && !result.isVoid())
    {
       gROOT->SetLineHasBeenProcessed();
-      return result.simplisticCastAs<long>();
+      return mpResult.fCR.fValue.simplisticCastAs<long>();
    }
    gROOT->SetLineHasBeenProcessed();
    return 0;
@@ -2720,10 +2719,9 @@ Int_t TCling::Load(const char* filename, Bool_t system)
       else {
          // For the non system libs, we'd like to be able to unload them.
          // FIXME: Here we lose the information about kLoadLibAlreadyLoaded case.
-         cling::Interpreter::ECompilationOutcome compRes;
          cling::MetaProcessor::MaybeRedirectOutputRAII RAII(fMetaProcessor);
-         fMetaProcessor->process(Form(".L %s", canonLib.c_str()), compRes, /*cling::Value*/0);
-         if (compRes == cling::Interpreter::kSuccess)
+         cling::MetaProcessor::MetaProcessingResult result = fMetaProcessor->process(Form(".L %s", canonLib.c_str()));
+         if (result.fCR.fOutcome == cling::Interpreter::kSuccess)
             res = cling::DynamicLibraryManager::kLoadLibSuccess;
       }
    }
@@ -2793,9 +2791,8 @@ Long_t TCling::Calc(const char* line, EErrorCode* error)
    if (error) {
       *error = TInterpreter::kNoError;
    }
-   cling::Value valRef;
-   cling::Interpreter::ECompilationOutcome cr = fInterpreter->evaluate(line, valRef);
-   if (cr != cling::Interpreter::kSuccess) {
+   cling::Interpreter::CompilationResult cr = fInterpreter->evaluate(line);
+   if (cr.fOutcome != cling::Interpreter::kSuccess) {
       // Failure in compilation.
       if (error) {
          // Note: Yes these codes are weird.
@@ -2803,7 +2800,7 @@ Long_t TCling::Calc(const char* line, EErrorCode* error)
       }
       return 0L;
    }
-   if (!valRef.isValid()) {
+   if (!cr.fValue.isValid()) {
       // Failure at runtime.
       if (error) {
          // Note: Yes these codes are weird.
@@ -2812,17 +2809,17 @@ Long_t TCling::Calc(const char* line, EErrorCode* error)
       return 0L;
    }
 
-   if (valRef.isVoid()) {
+   if (cr.fValue.isVoid()) {
       return 0;
    }
 
-   RegisterTemporary(valRef);
+   RegisterTemporary(cr.fValue);
 #ifdef R__WIN32
    if (gApplication && gApplication->GetApplicationImp()) {
       gROOT->SetLineHasBeenProcessed();
    }
 #endif // R__WIN32
-   return valRef.simplisticCastAs<long>();
+   return cr.fValue.simplisticCastAs<long>();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4726,18 +4723,17 @@ Int_t TCling::LoadLibraryMap(const char* rootmapfile)
    }
 
    // Process the forward declarations collected
-   cling::Transaction* T = nullptr;
-   auto compRes= fInterpreter->declare(uniqueString.Data(), &T);
-   assert(cling::Interpreter::kSuccess == compRes && "A declaration in a rootmap could not be compiled");
+   auto compRes= fInterpreter->declare(uniqueString.Data());
+   assert(cling::Interpreter::kSuccess == compRes.fOutcome && "A declaration in a rootmap could not be compiled");
 
-   if (compRes!=cling::Interpreter::kSuccess){
+   if (compRes.fOutcome!=cling::Interpreter::kSuccess){
       Warning("LoadLibraryMap",
                "Problems in %s declaring '%s' were encountered.", rootmapfile, uniqueString.Data()) ;
    }
 
-   if (T){
+   if (compRes.fTransaction){
       ExtVisibleStorageAdder evsAdder(fNSFromRootmaps);
-      for (auto declIt = T->decls_begin(); declIt < T->decls_end(); ++declIt) {
+      for (auto declIt = compRes.fTransaction->decls_begin(); declIt < compRes.fTransaction->decls_end(); ++declIt) {
          if (declIt->m_DGR.isSingleDecl()) {
             if (Decl* D = declIt->m_DGR.getSingleDecl()) {
                if (NamespaceDecl* NSD = dyn_cast<NamespaceDecl>(D)) {
@@ -5080,7 +5076,7 @@ Int_t TCling::AutoLoad(const char *cls, Bool_t knowDictNotLoaded /* = kFALSE */)
 ////////////////////////////////////////////////////////////////////////////////
 /// Parse the payload or header.
 
-static cling::Interpreter::ECompilationOutcome ExecAutoParse(const char *what,
+static cling::Interpreter::CompilationResult ExecAutoParse(const char *what,
                                                            Bool_t header,
                                                            cling::Interpreter *interpreter)
 {
@@ -5118,7 +5114,7 @@ static cling::Interpreter::ECompilationOutcome ExecAutoParse(const char *what,
             + gInterpreterClassDef +
             "#endif");
 
-   cling::Interpreter::ECompilationOutcome cr;
+   cling::Interpreter::CompilationResult cr;
    {
       // scope within which diagnostics are de-activated
       // For now we disable diagnostics because we saw them already at
@@ -5241,7 +5237,7 @@ Int_t TCling::AutoParse(const char *cls)
                      initVSIZEval = 1e-3*info.fMemVirtual;
                   }
                   auto cRes = ExecAutoParse(hName, kFALSE, fInterpreter);
-                  if (cRes != cling::Interpreter::kSuccess) {
+                  if (cRes.fOutcome != cling::Interpreter::kSuccess) {
                      if (hName[0] == '\n')
                         Error("AutoParse", "Error parsing payload code for class %s with content:\n%s", apKey, hName);
                   } else {
@@ -5262,7 +5258,7 @@ Int_t TCling::AutoParse(const char *cls)
                           "Parsing single header %s", hName);
                   }
                   auto cRes = ExecAutoParse(hName, kTRUE, fInterpreter);
-                  if (cRes != cling::Interpreter::kSuccess) {
+                  if (cRes.fOutcome != cling::Interpreter::kSuccess) {
                      Error("AutoParse", "Error parsing headerfile %s for class %s.", hName, apKey);
                   } else {
                      nHheadersParsed++;
@@ -6044,10 +6040,9 @@ int TCling::GetSecurityError() const
 
 int TCling::LoadFile(const char* path) const
 {
-   cling::Interpreter::ECompilationOutcome compRes;
    cling::MetaProcessor::MaybeRedirectOutputRAII RAII(fMetaProcessor);
-   fMetaProcessor->process(TString::Format(".L %s", path), compRes, /*cling::Value*/0);
-   return compRes == cling::Interpreter::kFailure;
+   cling::MetaProcessor::MetaProcessingResult result = fMetaProcessor->process(TString::Format(".L %s", path));
+   return result.fCR.fOutcome == cling::Interpreter::kFailure;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -6058,7 +6053,7 @@ int TCling::LoadFile(const char* path) const
 
 Bool_t TCling::LoadText(const char* text) const
 {
-   return (fInterpreter->declare(text) == cling::Interpreter::kSuccess);
+   return (fInterpreter->declare(text).fOutcome == cling::Interpreter::kSuccess);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -6173,10 +6168,9 @@ int TCling::UnloadFile(const char* path) const
       canonical = path;
    }
    // Unload a shared library or a source file.
-   cling::Interpreter::ECompilationOutcome compRes;
    cling::MetaProcessor::MaybeRedirectOutputRAII RAII(fMetaProcessor);
-   fMetaProcessor->process(Form(".U %s", canonical.c_str()), compRes, /*cling::Value*/0);
-   return compRes == cling::Interpreter::kFailure;
+   cling::MetaProcessor::MetaProcessingResult result = fMetaProcessor->process(Form(".U %s", canonical.c_str()));
+   return result.fCR.fOutcome == cling::Interpreter::kFailure;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

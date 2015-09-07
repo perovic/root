@@ -98,8 +98,8 @@ indent(ostringstream &buf, int indent_level)
 }
 
 static
-void
-EvaluateExpr(cling::Interpreter &interp, const Expr *E, cling::Value &V)
+cling::Value
+EvaluateExpr(cling::Interpreter &interp, const Expr *E)
 {
    R__LOCKGUARD(gInterpreterMutex);
 
@@ -108,9 +108,9 @@ EvaluateExpr(cling::Interpreter &interp, const Expr *E, cling::Value &V)
    APSInt res;
    if (E->EvaluateAsInt(res, C, /*AllowSideEffects*/Expr::SE_NoSideEffects)) {
       // IntTy or maybe better E->getType()?
-      V = cling::Value(C.IntTy, interp);
+      cling::Value V(C.IntTy, interp);
       V.getULL() = res.getZExtValue();
-      return;
+      return V;
    }
    // TODO: Build a wrapper around the expression to avoid decompilation and
    // compilation and other string operations.
@@ -125,7 +125,8 @@ EvaluateExpr(cling::Interpreter &interp, const Expr *E, cling::Value &V)
    out << ';'; // no value printing
    out.flush();
    // Evaluate() will set V to invalid if evaluation fails.
-   interp.evaluate(buf, V);
+   cling::Interpreter::CompilationResult cr = interp.evaluate(buf);
+   return cr.fValue;
 }
 
 namespace {
@@ -2126,8 +2127,7 @@ void TClingCallFunc::EvaluateArgList(const string &ArgList)
                                           : cling::LookupHelper::NoDiagnostics);
    for (SmallVectorImpl<Expr *>::const_iterator I = exprs.begin(),
          E = exprs.end(); I != E; ++I) {
-      cling::Value val;
-      EvaluateExpr(*fInterp, *I, val);
+      cling::Value val = EvaluateExpr(*fInterp, *I);
       if (!val.isValid()) {
          // Bad expression, all done.
          Error("TClingCallFunc::EvaluateArgList",

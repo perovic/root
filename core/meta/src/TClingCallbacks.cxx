@@ -66,9 +66,8 @@ TClingCallbacks::TClingCallbacks(cling::Interpreter* interp)
      fLastLookupCtx(0), fROOTSpecialNamespace(0),
      fFirstRun(true), fIsAutoloading(false), fIsAutoloadingRecursively(false),
      fPPOldFlag(false), fPPChanged(false) {
-   Transaction* T = 0;
-   m_Interpreter->declare("namespace __ROOT_SpecialObjects{}", &T);
-   fROOTSpecialNamespace = dyn_cast<NamespaceDecl>(T->getFirstDecl().getSingleDecl());
+  Interpreter::CompilationResult cr = m_Interpreter->declare("namespace __ROOT_SpecialObjects{}");
+  fROOTSpecialNamespace = dyn_cast<NamespaceDecl>(cr.fTransaction->getFirstDecl().getSingleDecl());
 }
 
 //pin the vtable here

@@ -80,14 +80,12 @@ namespace cling {
     void skipWhitespace();
 
     bool isCommandSymbol();
-    bool isCommand(MetaSema::ActionResult& actionResult,
-                   Value* resultValue);
+    bool isCommand(MetaSema::ActionResult& actionResult);
     bool isLCommand(MetaSema::ActionResult& actionResult);
     bool isTCommand(MetaSema::ActionResult& actionResult);
     bool isRedirectCommand(MetaSema::ActionResult& actionResult);
     bool isExtraArgList();
-    bool isXCommand(MetaSema::ActionResult& actionResult,
-                    Value* resultValue);
+    bool isXCommand(MetaSema::ActionResult& actionResult);
     bool isAtCommand();
     bool isqCommand();
     bool isUCommand(MetaSema::ActionResult& actionResult);
@@ -108,8 +106,7 @@ namespace cling {
     bool isNamespaceCommand();
     bool isgCommand();
     bool isTypedefCommand();
-    bool isShellCommand(MetaSema::ActionResult& actionResult,
-                        Value* resultValue);
+    bool isShellCommand(MetaSema::ActionResult& actionResult);
   public:
     MetaParser(MetaSema* Actions);
     void enterNewInputLine(llvm::StringRef Line);
@@ -118,8 +115,7 @@ namespace cling {
     ///
     ///\returns true if it was meta command.
     ///
-    bool isMetaCommand(MetaSema::ActionResult& actionResult,
-                       Value* resultValue);
+    bool isMetaCommand(MetaSema::ActionResult& actionResult);
 
     ///\brief Returns whether quit was requested via .q command
     ///

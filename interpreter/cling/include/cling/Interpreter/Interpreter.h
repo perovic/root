@@ -11,6 +11,7 @@
 #define CLING_INTERPRETER_H
 
 #include "cling/Interpreter/InvocationOptions.h"
+#include "cling/Interpreter/Value.h"
 
 #include "llvm/ADT/StringRef.h"
 
@@ -103,6 +104,14 @@ namespace cling {
       kSuccess,
       kFailure,
       kMoreInputExpected
+    };
+
+    struct CompilationResult {
+
+      ECompilationOutcome fOutcome;
+      std::string fOutput;
+      Value fValue;
+      Transaction *fTransaction;
     };
 
     ///\brief Describes the result of running a function.
@@ -198,9 +207,8 @@ namespace cling {
     ///
     ///\returns Whether the operation was fully successful.
     ///
-    ECompilationOutcome DeclareInternal(const std::string& input,
-                                      const CompilationOptions& CO,
-                                      Transaction** T = 0) const;
+    CompilationResult DeclareInternal(const std::string& input,
+                                      const CompilationOptions& CO) const;
 
     ///\brief Worker function, building block for interpreter's public
     /// interfaces.
@@ -214,10 +222,8 @@ namespace cling {
     ///
     ///\returns Whether the operation was fully successful.
     ///
-    ECompilationOutcome EvaluateInternal(const std::string& input,
-                                       CompilationOptions CO,
-                                       Value* V = 0,
-                                       Transaction** T = 0);
+    CompilationResult EvaluateInternal(const std::string& input,
+                                       CompilationOptions CO);
 
     ///\brief Decides whether the input line should be wrapped or not by using
     /// simple lexing to determine whether it is known that it should be on the
@@ -405,8 +411,7 @@ namespace cling {
     ///
     ///\returns Whether the operation was fully successful.
     ///
-    ECompilationOutcome process(const std::string& input, Value* V = 0,
-                              Transaction** T = 0);
+    CompilationResult process(const std::string& input);
 
     ///\brief Parses input line, which doesn't contain statements. No code
     /// generation is done.
@@ -419,8 +424,7 @@ namespace cling {
     ///
     ///\returns Whether the operation was fully successful.
     ///
-    ECompilationOutcome parse(const std::string& input,
-                            Transaction** T = 0) const;
+    CompilationResult parse(const std::string& input) const;
 
     ///\brief Looks for a already generated PCM for the given header file and
     /// loads it.
@@ -443,7 +447,7 @@ namespace cling {
     ///
     ///\returns Whether the operation was fully successful.
     ///
-    ECompilationOutcome parseForModule(const std::string& input);
+    CompilationResult parseForModule(const std::string& input);
 
     ///\brief Compiles input line, which doesn't contain statements.
     ///
@@ -456,7 +460,7 @@ namespace cling {
     ///
     ///\returns Whether the operation was fully successful.
     ///
-    ECompilationOutcome declare(const std::string& input, Transaction** T = 0);
+    CompilationResult declare(const std::string &input);
 
     ///\brief Compiles input line, which contains only expressions.
     ///
@@ -470,7 +474,7 @@ namespace cling {
     ///
     ///\returns Whether the operation was fully successful.
     ///
-    ECompilationOutcome evaluate(const std::string& input, Value& V);
+    CompilationResult evaluate(const std::string &input);
 
     ///\brief Compiles input line, which contains only expressions and prints
     /// out the result of its execution.
@@ -485,7 +489,7 @@ namespace cling {
     ///
     ///\returns Whether the operation was fully successful.
     ///
-    ECompilationOutcome echo(const std::string& input, Value* V = 0);
+    CompilationResult echo(const std::string &input);
 
     ///\brief Compiles input line and runs.
     ///
@@ -497,7 +501,7 @@ namespace cling {
     ///
     ///\returns Whether the operation was fully successful.
     ///
-    ECompilationOutcome execute(const std::string& input);
+    CompilationResult execute(const std::string &input);
 
     ///\brief Generates code for all Decls of a transaction.
     ///
@@ -525,9 +529,8 @@ namespace cling {
     ///\param [out] T -  Transaction containing the loaded file.
     ///\returns result of the compilation.
     ///
-    ECompilationOutcome loadFile(const std::string& filename,
-                               bool allowSharedLib = true,
-                               Transaction** T = 0);
+    CompilationResult loadFile(const std::string& filename,
+                               bool allowSharedLib = true);
 
     ///\brief Unloads (forgets) given number of transactions.
     ///

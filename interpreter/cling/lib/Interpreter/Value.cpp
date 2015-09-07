@@ -276,7 +276,7 @@ namespace cling {
     std::string printValueInternal(const Value& V);
   } // end namespace valuePrinterInternal
 
-  void Value::print(llvm::raw_ostream& Out) const {
+  std::string Value::print() const {
 
     // Get the default type string representation
     std::string typeStr = cling::valuePrinterInternal::printTypeInternal(*this);
@@ -284,7 +284,7 @@ namespace cling {
     std::string valueStr = cling::valuePrinterInternal::printValueInternal(*this);
 
     // Print the type and the value:
-    Out << typeStr + " " + valueStr << "\n";
+    return typeStr + " " + valueStr + "\n";
   }
 
   void Value::dump() const {
@@ -295,6 +295,6 @@ namespace cling {
     // Alternatively we could use llvm::errs()
     std::unique_ptr<llvm::raw_ostream> Out;
     Out.reset(new llvm::raw_os_ostream(std::cout));
-    print(*Out.get());
+    *(Out.get()) << print();
   }
 } // end namespace cling

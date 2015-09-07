@@ -988,7 +988,8 @@ Long_t TApplication::ProcessLine(const char *line, Bool_t sync, Int_t *err)
    if (sync)
       return gInterpreter->ProcessLineSynch(line, (TInterpreter::EErrorCode*)err);
    else
-      return gInterpreter->ProcessLine(line, (TInterpreter::EErrorCode*)err);
+      return
+   ->ProcessLine(line, (TInterpreter::EErrorCode*)err);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

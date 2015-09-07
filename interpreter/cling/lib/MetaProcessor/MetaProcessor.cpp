@@ -125,43 +125,46 @@ namespace cling {
 
   MetaProcessor::~MetaProcessor() {}
 
-  int MetaProcessor::process(const char* input_text,
-                             Interpreter::ECompilationOutcome& compRes,
-                             Value* result) {
-    if (result)
-      *result = Value();
-    compRes = Interpreter::kSuccess;
-    int expectedIndent = m_InputValidator->getExpectedIndent();
+  MetaProcessor::MetaProcessingResult MetaProcessor::process(const char* input_text) {
+    MetaProcessor::MetaProcessingResult result;
+    result.fCR.fOutcome = Interpreter::kSuccess;
+    result.fExpectedIndent = m_InputValidator->getExpectedIndent();
 
-    if (expectedIndent)
-      compRes = Interpreter::kMoreInputExpected;
+    if (result.fExpectedIndent)
+      result.fCR.fOutcome = Interpreter::kMoreInputExpected;
     if (!input_text || !input_text[0]) {
       // nullptr / empty string, nothing to do.
-      return expectedIndent;
+      return result;
     }
     std::string input_line(input_text);
     if (input_line == "\n") { // just a blank line, nothing to do.
-      return expectedIndent;
+      return result;
     }
     //  Check for and handle meta commands.
     m_MetaParser->enterNewInputLine(input_line);
-    MetaSema::ActionResult actionResult = MetaSema::AR_Success;
-    if (m_MetaParser->isMetaCommand(actionResult, result)) {
+    MetaSema::ActionResult actionResult = MetaSema::ActionResult{MetaSema::kAO_Success, {}, 0};
+    if (m_MetaParser->isMetaCommand(actionResult)) {
 
-      if (m_MetaParser->isQuitRequested())
-        return -1;
+      if (m_MetaParser->isQuitRequested()){
+        // FIXME BORIS USE fQuitRequested INSTEAD AND UNSIGNED fExpectedIndent
+        result.fQuitRequested = true;
+        result.fExpectedIndent = -1;
+        return result;
+      }
 
-      if (actionResult != MetaSema::AR_Success)
-        compRes = Interpreter::kFailure;
-       // ExpectedIndent might have changed after meta command.
-       return m_InputValidator->getExpectedIndent();
+      if (actionResult.fAOutcome != MetaSema::kAO_Success)
+        result.fCR.fOutcome = Interpreter::kFailure;
+      // ExpectedIndent might have changed after meta command.
+      result.fExpectedIndent = m_InputValidator->getExpectedIndent();
+      return result;
     }
 
     // Check if the current statement is now complete. If not, return to
     // prompt for more.
     if (m_InputValidator->validate(input_line) == InputValidator::kIncomplete) {
-      compRes = Interpreter::kMoreInputExpected;
-      return m_InputValidator->getExpectedIndent();
+      result.fCR.fOutcome = Interpreter::kMoreInputExpected;
+      result.fExpectedIndent = m_InputValidator->getExpectedIndent();
+      return result;
     }
 
     //  We have a complete statement, compile and execute it.
@@ -170,9 +173,10 @@ namespace cling {
     // if (m_Options.RawInput)
     //   compResLocal = m_Interp.declare(input);
     // else
-    compRes = m_Interp.process(input, result);
+    result.fCR = m_Interp.process(input);
+    result.fExpectedIndent = 0;
 
-    return 0;
+    return result;
   }
 
   void MetaProcessor::cancelContinuation() const {
@@ -183,9 +187,8 @@ namespace cling {
     return m_InputValidator->getExpectedIndent();
   }
 
-  Interpreter::ECompilationOutcome
+  MetaProcessor::MetaProcessingResult
   MetaProcessor::readInputFromFile(llvm::StringRef filename,
-                                   Value* result,
                                    bool ignoreOutmostBlock /*=false*/) {
 
     {
@@ -201,7 +204,7 @@ namespace cling {
         if (fileType != llvm::sys::fs::file_magic::unknown) {
           llvm::errs() << "Error in cling::MetaProcessor: "
             "cannot read input from a binary file!\n";
-          return Interpreter::kFailure;
+          return MetaProcessingResult{Interpreter::CompilationResult{Interpreter::kFailure, "", {}, 0}, 0, false};
         }
         unsigned printable = 0;
         for (size_t i = 0; i < readMagic; ++i)
@@ -211,7 +214,7 @@ namespace cling {
           // 50% printable for ASCII files should be a safe guess.
           llvm::errs() << "Error in cling::MetaProcessor: "
             "cannot read input from a (likely) binary file!\n" << printable;
-          return Interpreter::kFailure;
+          return MetaProcessingResult{Interpreter::CompilationResult{Interpreter::kFailure, "", {}, 0}, 0, false};
         }
       }
     }
@@ -281,21 +284,21 @@ namespace cling {
     bool topmost = !m_TopExecutingFile.data();
     if (topmost)
       m_TopExecutingFile = m_CurrentlyExecutingFile;
-    Interpreter::ECompilationOutcome ret;
     // We don't want to value print the results of a unnamed macro.
     content = "#line 2 \"" + filename.str() + "\" \n" + content;
-    if (process((content + ";").c_str(), ret, result)) {
+    MetaProcessingResult result = process((content + ";").c_str());
+    if (result.fExpectedIndent) {
       // Input file has to be complete.
        llvm::errs()
           << "Error in cling::MetaProcessor: file "
           << llvm::sys::path::filename(filename)
           << " is incomplete (missing parenthesis or similar)!\n";
-      ret = Interpreter::kFailure;
+      result.fCR.fOutcome = Interpreter::kFailure;
     }
     m_CurrentlyExecutingFile = llvm::StringRef();
     if (topmost)
       m_TopExecutingFile = llvm::StringRef();
-    return ret;
+    return result;
   }
 
   void MetaProcessor::setFileStream(llvm::StringRef file, bool append, int fd,

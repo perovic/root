@@ -11,6 +11,7 @@
 #define CLING_VALUE_H
 
 #include <stddef.h>
+#include <string>
 
 namespace llvm {
   class raw_ostream;
@@ -226,7 +227,7 @@ namespace cling {
     ///   std::string printValue(const MyClass* const p, POSSIBLYDERIVED* ac,
     ///                          const Value& V);
     ///\endcode
-    void print(llvm::raw_ostream& Out) const;
+    std::string print() const;
     void dump() const;
   };
 } // end namespace cling

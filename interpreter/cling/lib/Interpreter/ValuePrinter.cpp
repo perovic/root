@@ -154,10 +154,9 @@ static std::string executePrintValue(const Value &V, const T &val) {
   printValueSS << getTypeString(V);
   printValueSS << (const void *) &val;
   printValueSS << ");";
-  Value printValueV;
-  Interp->evaluate(printValueSS.str(), printValueV);
-  assert(printValueV.isValid() && "Must return valid value.");
-  return *(std::string *) printValueV.getPtr();
+  Interpreter::CompilationResult cr = Interp->evaluate(printValueSS.str());
+  assert(cr.fValue.isValid() && "Must return valid value.");
+  return *(std::string *) cr.fValue.getPtr();
 }
 
 static std::string invokePrintValueOverload(const Value &V) {

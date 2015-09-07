@@ -44,8 +44,8 @@ namespace cling {
 
   MetaSema::ActionResult MetaSema::actOnLCommand(llvm::StringRef file,
                                              Transaction** transaction /*= 0*/){
-    ActionResult result = actOnUCommand(file);
-    if (result != AR_Success)
+    MetaSema::ActionResult result = actOnUCommand(file);
+    if (result.fAOutcome != kAO_Success)
       return result;
 
     // In case of libraries we get .L lib.so, which might automatically pull in
@@ -57,18 +57,18 @@ namespace cling {
     std::string canFile = m_Interpreter.lookupFileOrLibrary(file);
     if (canFile.empty())
       canFile = file;
-    if (m_Interpreter.loadFile(canFile, true /*allowSharedLib*/, transaction)
-        == Interpreter::kSuccess) {
+    Interpreter::CompilationResult cr = m_Interpreter.loadFile(canFile, true /*allowSharedLib*/);
+    if (cr.fOutcome == Interpreter::kSuccess) {
       registerUnloadPoint(unloadPoint, canFile);
-      return AR_Success;
+      return MetaSema::ActionResult{kAO_Success, cr.fValue, cr.fTransaction};
     }
-    return AR_Failure;
+    return MetaSema::ActionResult{kAO_Failure, {}, 0};
   }
 
   MetaSema::ActionResult MetaSema::actOnTCommand(llvm::StringRef inputFile,
                                                  llvm::StringRef outputFile) {
     m_Interpreter.GenerateAutoloadingMap(inputFile, outputFile);
-    return AR_Success;
+    return MetaSema::ActionResult{kAO_Success, {}, 0};
   }
 
   MetaSema::ActionResult MetaSema::actOnRedirectCommand(llvm::StringRef file,
@@ -76,7 +76,7 @@ namespace cling {
                          bool append) {
 
     m_MetaProcessor.setStdStream(file, stream, append);
-    return AR_Success;
+    return MetaSema::ActionResult{kAO_Success, {}, 0};
   }
 
   void MetaSema::actOnComment(llvm::StringRef comment) const {
@@ -85,14 +85,13 @@ namespace cling {
   }
 
   MetaSema::ActionResult MetaSema::actOnxCommand(llvm::StringRef file,
-                                                 llvm::StringRef args,
-                                                 Value* result) {
+                                                 llvm::StringRef args) {
 
     // Check if there is a function named after the file.
     assert(!args.empty() && "Arguments must be provided (at least \"()\"");
     cling::Transaction* T = 0;
     MetaSema::ActionResult actionResult = actOnLCommand(file, &T);
-    if (actionResult == AR_Success) {
+    if (actionResult.fAOutcome == kAO_Success) {
       // Look for start of parameters:
       typedef std::pair<llvm::StringRef,llvm::StringRef> StringRefPair;
 
@@ -119,11 +118,13 @@ namespace cling {
         // use with -verify.
         Diags.Report(noLoc, diagID)
           << pairFuncExt.first;
-        return AR_Success;
+        return MetaSema::ActionResult{kAO_Success, {}, 0};
       }
-
-      if (m_Interpreter.echo(expression, result) != Interpreter::kSuccess)
-        actionResult = AR_Failure;
+      Interpreter::CompilationResult cr = m_Interpreter.echo(expression);
+      if (cr.fOutcome != Interpreter::kSuccess)
+        actionResult = MetaSema::ActionResult{kAO_Failure, cr.fValue, 0};
+      else
+        actionResult.fValue = cr.fValue;
     }
     return actionResult;
   }
@@ -138,7 +139,7 @@ namespace cling {
 
   MetaSema::ActionResult MetaSema::actOnUndoCommand(unsigned N/*=1*/) {
     m_Interpreter.unload(N);
-    return AR_Success;
+    return MetaSema::ActionResult{kAO_Success, {}, 0};
   }
 
   MetaSema::ActionResult MetaSema::actOnUCommand(llvm::StringRef file) {
@@ -194,7 +195,7 @@ namespace cling {
         m_Watermarks.erase(Pos);
       }
     }
-    return AR_Success;
+    return MetaSema::ActionResult{kAO_Success, {}, 0};
   }
 
   void MetaSema::actOnICommand(llvm::StringRef path) const {
@@ -419,25 +420,23 @@ namespace cling {
   }
 
   MetaSema::ActionResult
-  MetaSema::actOnShellCommand(llvm::StringRef commandLine,
-                              Value* result) const {
+  MetaSema::actOnShellCommand(llvm::StringRef commandLine) const {
+    MetaSema::ActionResult result;
     llvm::StringRef trimmed(commandLine.trim(" \t\n\v\f\r "));
     if (!trimmed.empty()) {
       int ret = std::system(trimmed.str().c_str());
 
       // Build the result
       clang::ASTContext& Ctx = m_Interpreter.getCI()->getASTContext();
-      if (result) {
-        *result = Value(Ctx.IntTy, m_Interpreter);
-        result->getAs<long long>() = ret;
-      }
+      result.fValue = Value(Ctx.IntTy, m_Interpreter);
+      result.fValue.getAs<long long>() = ret;
 
-      return (ret == 0) ? AR_Success : AR_Failure;
+      result.fAOutcome = (ret == 0) ? kAO_Success : kAO_Failure;
+      return result;
     }
-    if (result)
-      *result = Value();
+
     // nothing to run - should this be success or failure?
-    return AR_Failure;
+    return MetaSema::ActionResult{kAO_Failure, {}, 0};
   }
 
   void MetaSema::registerUnloadPoint(const Transaction* unloadPoint,

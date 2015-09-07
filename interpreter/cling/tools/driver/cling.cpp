@@ -54,7 +54,6 @@ int main( int argc, char **argv ) {
   if (!Interactive) {
     for (size_t I = 0, N = Inputs.size(); I < N; ++I) {
       std::string cmd;
-      cling::Interpreter::ECompilationOutcome compRes;
       if (!interp.lookupFileOrLibrary(Inputs[I]).empty()) {
         std::ifstream infile(interp.lookupFileOrLibrary(Inputs[I]));
         std::string line;
@@ -63,7 +62,7 @@ int main( int argc, char **argv ) {
           // TODO: Check whether the filename specified after #! is the current
           // executable.
           while(std::getline(infile, line)) {
-            ui.getMetaProcessor()->process(line.c_str(), compRes, 0);
+            ui.getMetaProcessor()->process(line.c_str());
           }
           continue;
         }
@@ -71,7 +70,7 @@ int main( int argc, char **argv ) {
           cmd += ".x ";
       }
       cmd += Inputs[I];
-      ui.getMetaProcessor()->process(cmd.c_str(), compRes, 0);
+      ui.getMetaProcessor()->process(cmd.c_str());
     }
   }
   else {

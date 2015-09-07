@@ -137,12 +137,11 @@ namespace cling {
           break;
         }
 
-        cling::Interpreter::ECompilationOutcome compRes;
         MetaProcessor::MaybeRedirectOutputRAII RAII(m_MetaProcessor.get());
-        int indent
-          = m_MetaProcessor->process(line.c_str(), compRes, 0/*result*/);
+        MetaProcessor::MetaProcessingResult result
+          = m_MetaProcessor->process(line.c_str());
         // Quit requested
-        if (indent < 0)
+        if (result.fExpectedIndent < 0)
           break;
         std::string Prompt = "[cling]";
         if (m_MetaProcessor->getInterpreter().isRawInputEnabled())
@@ -150,9 +149,9 @@ namespace cling {
         else
           Prompt.append("$ ");
 
-        if (indent > 0)
+        if (result.fExpectedIndent > 0)
           // Continuation requested.
-          Prompt.append('?' + std::string(indent * 3, ' '));
+          Prompt.append('?' + std::string(result.fExpectedIndent * 3, ' '));
 
         TI.SetPrompt(Prompt.c_str());
 

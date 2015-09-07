@@ -2209,7 +2209,7 @@ static bool InjectModuleUtilHeader(const char *argv0,
    } else {
       modGen.WriteContentHeader(out);
    }
-   if (interp.declare(out.str()) != cling::Interpreter::kSuccess) {
+   if (interp.declare(out.str()).fOutcome != cling::Interpreter::kSuccess) {
       const std::string &hdrName
          = umbrella ? modGen.GetUmbrellaName() : modGen.GetContentName();
       ROOT::TMetaUtils::Error(0, "%s: compilation failure (%s)\n", argv0,
@@ -4183,25 +4183,25 @@ int RootCling(int argc,
    const bool useROOTINCDIR = false;
 #endif
    if (isGenreflex) {
-      if (interp.declare("namespace std {} using namespace std;") != cling::Interpreter::kSuccess) {
+      if (interp.declare("namespace std {} using namespace std;").fOutcome != cling::Interpreter::kSuccess) {
          // There was an error.
          ROOT::TMetaUtils::Error(0, "Error loading the default header files.\n");
          return 1;
       }
    } else {
       // rootcling
-      if (interp.declare("namespace std {} using namespace std;") != cling::Interpreter::kSuccess
+      if (interp.declare("namespace std {} using namespace std;").fOutcome != cling::Interpreter::kSuccess
             // CINT uses to define a few header implicitly, we need to do it explicitly.
             || interp.declare("#include <assert.h>\n"
                               "#include <stdlib.h>\n"
                               "#include <stddef.h>\n"
                               "#include <math.h>\n"
                               "#include <string.h>\n"
-                             ) != cling::Interpreter::kSuccess
+                             ).fOutcome != cling::Interpreter::kSuccess
             || (!useROOTINCDIR
                 && interp.declare("#include \"Rtypes.h\"\n"
                                   "#include \"TClingRuntime.h\"\n"
-                                  "#include \"TObject.h\"") != cling::Interpreter::kSuccess)
+                                  "#include \"TObject.h\"").fOutcome != cling::Interpreter::kSuccess)
 #ifdef ROOTINCDIR
             || (useROOTINCDIR
                 && interp.declare("#include \"" ROOTINCDIR "/Rtypes.h\"\n"
@@ -4382,7 +4382,7 @@ int RootCling(int argc,
    PP.AddPragmaHandler(new IgnoringPragmaHandler("create"));
 
    if (!interpreterDeclarations.empty() &&
-       interp.declare(interpreterDeclarations) != cling::Interpreter::kSuccess) {
+       interp.declare(interpreterDeclarations).fOutcome != cling::Interpreter::kSuccess) {
       ROOT::TMetaUtils::Error(0, "%s: Linkdef compilation failure\n", argv[0]);
       return 1;
    }

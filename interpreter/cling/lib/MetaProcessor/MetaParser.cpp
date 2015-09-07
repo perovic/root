@@ -14,7 +14,6 @@
 
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/InvocationOptions.h"
-#include "cling/Interpreter/Value.h"
 
 #include "llvm/ADT/Optional.h"
 #include "llvm/ADT/StringRef.h"
@@ -96,9 +95,8 @@ namespace cling {
       consumeToken();
   }
 
-  bool MetaParser::isMetaCommand(MetaSema::ActionResult& actionResult,
-                                 Value* resultValue) {
-    return isCommandSymbol() && isCommand(actionResult, resultValue);
+  bool MetaParser::isMetaCommand(MetaSema::ActionResult& actionResult) {
+    return isCommandSymbol() && isCommand(actionResult);
   }
 
   bool MetaParser::isQuitRequested() const {
@@ -114,14 +112,11 @@ namespace cling {
     return true;
   }
 
-  bool MetaParser::isCommand(MetaSema::ActionResult& actionResult,
-                             Value* resultValue) {
-    if (resultValue)
-      *resultValue = Value();
+  bool MetaParser::isCommand(MetaSema::ActionResult& actionResult) {
     // Assume success; some actions don't set it.
-    actionResult = MetaSema::AR_Success;
+    actionResult.fAOutcome = MetaSema::kAO_Success;
     return isLCommand(actionResult)
-      || isXCommand(actionResult, resultValue) ||isTCommand(actionResult)
+      || isXCommand(actionResult) ||isTCommand(actionResult)
       || isAtCommand()
       || isqCommand() || isUCommand(actionResult) || isICommand()
       || isOCommand() || israwInputCommand()
@@ -129,7 +124,7 @@ namespace cling {
       || isdynamicExtensionsCommand() || ishelpCommand() || isfileExCommand()
       || isfilesCommand() || isClassCommand() || isNamespaceCommand() || isgCommand()
       || isTypedefCommand()
-      || isShellCommand(actionResult, resultValue) || isstoreStateCommand()
+      || isShellCommand(actionResult) || isstoreStateCommand()
       || iscompareStateCommand() || isstatsCommand() || isundoCommand()
       || isRedirectCommand(actionResult);
   }
@@ -253,10 +248,7 @@ namespace cling {
   // FilePath := AnyString
   // ArgList := (ExtraArgList) ' ' [ArgList]
   // ExtraArgList := AnyString [, ExtraArgList]
-  bool MetaParser::isXCommand(MetaSema::ActionResult& actionResult,
-                              Value* resultValue) {
-    if (resultValue)
-      *resultValue = Value();
+  bool MetaParser::isXCommand(MetaSema::ActionResult& actionResult) {
     const Token& Tok = getCurTok();
     if (Tok.is(tok::ident) && (Tok.getIdent().equals("x")
                                || Tok.getIdent().equals("X"))) {
@@ -269,7 +261,7 @@ namespace cling {
       std::string args = getCurTok().getBufStart();
       if (args.empty())
         args = "()";
-      actionResult = m_Actions->actOnxCommand(file, args, resultValue);
+      actionResult = m_Actions->actOnxCommand(file, args);
       return true;
     }
 
@@ -573,10 +565,7 @@ namespace cling {
     return false;
   }
 
-  bool MetaParser::isShellCommand(MetaSema::ActionResult& actionResult,
-                                  Value* resultValue) {
-    if (resultValue)
-      *resultValue = Value();
+  bool MetaParser::isShellCommand(MetaSema::ActionResult& actionResult) {
     const Token& Tok = getCurTok();
     if (Tok.is(tok::excl_mark)) {
       consumeAnyStringToken(tok::eof);
@@ -584,8 +573,7 @@ namespace cling {
       if (NextTok.is(tok::raw_ident)) {
          llvm::StringRef commandLine(NextTok.getIdent());
          if (!commandLine.empty())
-            actionResult = m_Actions->actOnShellCommand(commandLine,
-                                                        resultValue);
+            actionResult = m_Actions->actOnShellCommand(commandLine);
       }
       return true;
     }

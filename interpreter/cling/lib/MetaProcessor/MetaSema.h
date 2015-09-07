@@ -49,9 +49,16 @@ namespace cling {
       kToggle = 2
     };
 
-    enum ActionResult {
-      AR_Failure = 0,
-      AR_Success = 1
+    enum EActionOutcome {
+      kAO_Failure = 0,
+      kAO_Success = 1
+    };
+
+    struct ActionResult {
+
+      EActionOutcome fAOutcome;
+      Value fValue;
+      Transaction *fTransaction;
     };
 
   public:
@@ -106,8 +113,7 @@ namespace cling {
     ///\param[out] result - If not NULL, will hold the value of the last
     ///                     expression.
     ///
-    ActionResult actOnxCommand(llvm::StringRef file, llvm::StringRef args,
-                               Value* result);
+    ActionResult actOnxCommand(llvm::StringRef file, llvm::StringRef args);
 
     ///\brief Actions to be performed on quit.
     ///
@@ -225,8 +231,7 @@ namespace cling {
     ///\param[in] commandLine - shell command + optional list of parameters.
     ///\param[out] result - if not NULL will hold shell exit code at return.
     ///
-    ActionResult actOnShellCommand(llvm::StringRef commandLine,
-                                   Value* result) const;
+    ActionResult actOnShellCommand(llvm::StringRef commandLine) const;
 
     ///\brief Register the file as an upload point for the current
     ///  Transaction: when unloading that file, all transactions after
