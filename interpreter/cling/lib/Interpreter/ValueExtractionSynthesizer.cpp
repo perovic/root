@@ -441,8 +441,10 @@ namespace {
     assert(!V.needsManagedAllocation() && "Must contain non managed temporary");
     assert(vpOn != (char)cling::CompilationOptions::VPAuto
            && "VPAuto must have been expanded earlier.");
-    if (vpOn == (char)cling::CompilationOptions::VPEnabled)
+    if (vpOn == (char)cling::CompilationOptions::VPEnabled) {
       V.dump();
+//      V.getInterpreter()->setPrintText(V.print());
+    }
   }
 
   ///\brief Allocate the Value and return the Value

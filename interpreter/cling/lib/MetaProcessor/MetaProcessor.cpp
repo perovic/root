@@ -22,11 +22,13 @@
 #include "clang/Lex/Preprocessor.h"
 
 #include "llvm/Support/Path.h"
+#include "llvm/Support/raw_os_ostream.h"
 
 #include <fstream>
 #include <cstdlib>
 #include <cctype>
 #include <stdio.h>
+#include <iostream>
 #ifndef WIN32
 #include <unistd.h>
 #else
@@ -175,6 +177,16 @@ namespace cling {
     return 0;
   }
 
+  void MetaProcessor::printEvaluated() {
+    std::string printText = getInterpreter().getPrintText();
+    if (!printText.empty()) {
+      std::unique_ptr<llvm::raw_ostream> Out;
+      Out.reset(new llvm::raw_os_ostream(std::cout));
+      *Out.get() << printText + "\n";
+    }
+    getInterpreter().setPrintText("");
+  }
+
   void MetaProcessor::cancelContinuation() const {
     m_InputValidator->reset();
   }
@@ -292,6 +304,8 @@ namespace cling {
           << " is incomplete (missing parenthesis or similar)!\n";
       ret = Interpreter::kFailure;
     }
+    printEvaluated();
+
     m_CurrentlyExecutingFile = llvm::StringRef();
     if (topmost)
       m_TopExecutingFile = llvm::StringRef();

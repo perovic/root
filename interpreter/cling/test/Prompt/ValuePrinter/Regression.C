@@ -27,14 +27,15 @@ A foo2(const A& arg) { return A(42); }
 .rawInput 0
 
 foo(A(12)).Var
-// CHECK: (const int) 12
+// First the value is destroyed, then the saved output is printed in the REPL
 // CHECK: A d'tor
+// CHECK: (const int) 12
 // End PR #93006
 
 // myvector.end() failed to print (roottest/cling/stl/default/VectorSort.C)
 foo2(A(42))
-// CHECK: (A) @0x{{[0-9a-f]+}}
 // CHECK: A d'tor
+// CHECK: (A) @0x{{[0-9a-f]+}}
 
  // Savannah #96523
 int *p = (int*)0x123;

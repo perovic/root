@@ -10,9 +10,11 @@
 
 extern "C" int printf(const char*,...);
 #include "cling/Interpreter/Interpreter.h"
+#include <iostream>
 
 int DoRecurse() {
   gCling->process("int RecursiveInitVar1 = printf(\"Recursive init\\n\")");
+  std::cout << gCling->getPrintText() << std::endl;
   //CHECK: Recursive init
   //CHECK: (int) 15
   return 12;
@@ -26,4 +28,5 @@ const char* code =
 
 void RecursiveInit() {
   gCling->process(code);
+  std::cout << gCling->getPrintText() << std::endl;
 }

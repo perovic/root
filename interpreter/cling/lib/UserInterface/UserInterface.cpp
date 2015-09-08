@@ -131,16 +131,23 @@ namespace cling {
     while (true) {
       try {
         m_MetaProcessor->getOuts().flush();
+
+        // Read
         TextInput::EReadResult RR = TI.ReadInput();
         TI.TakeInput(line);
         if (RR == TextInput::kRREOF) {
           break;
         }
 
+        // Evaluate
         cling::Interpreter::CompilationResult compRes;
         MetaProcessor::MaybeRedirectOutputRAII RAII(m_MetaProcessor.get());
         int indent
           = m_MetaProcessor->process(line.c_str(), compRes, 0/*result*/);
+
+        // Print
+        m_MetaProcessor->printEvaluated();
+
         // Quit requested
         if (indent < 0)
           break;

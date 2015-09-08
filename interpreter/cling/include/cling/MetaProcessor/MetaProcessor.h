@@ -107,7 +107,7 @@ namespace cling {
     MetaProcessor(Interpreter& interp, llvm::raw_ostream& outs);
     ~MetaProcessor();
 
-    const Interpreter& getInterpreter() const { return m_Interp; }
+    Interpreter& getInterpreter() const { return m_Interp; }
 
     ///\brief Get the output stream used by the MetaProcessor for its output.
     /// (in contrast to the interpreter's output which is redirected using
@@ -144,6 +144,8 @@ namespace cling {
     int process(const char* input_line,
                 Interpreter::CompilationResult& compRes,
                 cling::Value* result);
+
+    void printEvaluated();
 
     ///\brief When continuation is requested, this cancels and ignores previous
     /// input, resetting the continuation to a new line.
