@@ -1003,8 +1003,8 @@ namespace cling {
           // the !V->needsManagedAllocation() case is handled by
           // dumpIfNoStorage.
           && V->needsManagedAllocation()) {
-        V->dump();
-//        setPrintText(V->print());
+//        V->dump();
+        setPrintText(V->print());
       }
       return Interpreter::kSuccess;
     }

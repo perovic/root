@@ -553,7 +553,7 @@ namespace cling {
     void enableRawInput(bool raw = true) { m_RawInputEnabled = raw; }
 
     std::string getPrintText() const { return m_PrintText; }
-    void setPrintText(std::string text) { m_PrintText = text; }
+    void setPrintText(const std::string& text) { m_PrintText = text; }
 
     clang::CompilerInstance* getCI() const;
     clang::Sema& getSema() const;

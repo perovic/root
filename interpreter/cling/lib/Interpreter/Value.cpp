@@ -295,6 +295,6 @@ namespace cling {
     // Alternatively we could use llvm::errs()
     std::unique_ptr<llvm::raw_ostream> Out;
     Out.reset(new llvm::raw_os_ostream(std::cout));
-    *Out.get() << print() + "\n";
+    *Out.get() << print() << "\n";
   }
 } // end namespace cling

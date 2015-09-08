@@ -146,7 +146,7 @@ namespace cling {
           = m_MetaProcessor->process(line.c_str(), compRes, 0/*result*/);
 
         // Print
-        m_MetaProcessor->printEvaluated();
+//        m_MetaProcessor->printEvaluated();
 
         // Quit requested
         if (indent < 0)

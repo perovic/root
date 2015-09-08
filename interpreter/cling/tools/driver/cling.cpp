@@ -65,7 +65,7 @@ int main( int argc, char **argv ) {
           while(std::getline(infile, line)) {
             ui.getMetaProcessor()->process(line.c_str(), compRes, 0);
 
-            ui.getMetaProcessor()->printEvaluated();
+//            ui.getMetaProcessor()->printEvaluated();
           }
           continue;
         }
@@ -75,7 +75,7 @@ int main( int argc, char **argv ) {
       cmd += Inputs[I];
       ui.getMetaProcessor()->process(cmd.c_str(), compRes, 0);
 
-      ui.getMetaProcessor()->printEvaluated();
+//      ui.getMetaProcessor()->printEvaluated();
     }
   }
   else {
