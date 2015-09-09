@@ -305,13 +305,13 @@ namespace test {
                                                  bool resolve)
     : InterpreterCallbacks(interp), m_Resolve(resolve), m_TesterDecl(0) {
     m_Interpreter->process("cling::test::Tester = new cling::test::TestProxy();");
-    std::string printText = m_Interpreter->getPrintText();
-    if (!printText.empty()) {
-      std::unique_ptr<llvm::raw_ostream> Out;
-      Out.reset(new llvm::raw_os_ostream(std::cout));
-      *Out.get() << printText << "\n";
-    }
-    m_Interpreter->setPrintText("");
+//    std::string printText = m_Interpreter->getPrintText();
+//    if (!printText.empty()) {
+//      std::unique_ptr<llvm::raw_ostream> Out;
+//      Out.reset(new llvm::raw_os_ostream(std::cout));
+//      *Out.get() << printText << "\n";
+//    }
+//    m_Interpreter->setPrintText("");
   }
 
   SymbolResolverCallback::~SymbolResolverCallback() { }

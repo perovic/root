@@ -167,7 +167,8 @@ namespace cling {
   Interpreter::Interpreter(int argc, const char* const *argv,
                            const char* llvmdir /*= 0*/, bool noRuntime) :
     m_UniqueCounter(0), m_PrintDebug(false), m_DynamicLookupDeclared(false),
-    m_DynamicLookupEnabled(false), m_RawInputEnabled(false), m_PrintText("") {
+    m_DynamicLookupEnabled(false), m_RawInputEnabled(false)//, m_PrintText("")
+  {
 
     m_LLVMContext.reset(new llvm::LLVMContext);
     std::vector<unsigned> LeftoverArgsIdx;
@@ -1003,8 +1004,8 @@ namespace cling {
           // the !V->needsManagedAllocation() case is handled by
           // dumpIfNoStorage.
           && V->needsManagedAllocation()) {
-//        V->dump();
-        setPrintText(V->print());
+        V->dump();
+//        setPrintText(V->print());
       }
       return Interpreter::kSuccess;
     }

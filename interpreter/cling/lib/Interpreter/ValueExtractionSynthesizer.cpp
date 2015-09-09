@@ -430,8 +430,8 @@ namespace {
 // Provide implementation of the functions that ValueExtractionSynthesizer calls
 namespace {
 
-  static void dumpIfNoStorage(void* vpI, void* vpV, char vpOn) {
-    cling::Interpreter* i = (cling::Interpreter*)vpI;
+  static void dumpIfNoStorage(void* vpV, char vpOn) {
+//    cling::Interpreter* i = (cling::Interpreter*)vpI;
     const cling::Value& V = *(cling::Value*)vpV;
     // If the value copies over the temporary we must delay the printing until
     // the temporary gets copied over. For the rest of the temporaries we *must*
@@ -443,8 +443,8 @@ namespace {
     assert(vpOn != (char)cling::CompilationOptions::VPAuto
            && "VPAuto must have been expanded earlier.");
     if (vpOn == (char)cling::CompilationOptions::VPEnabled) {
-//      V.dump();
-      i->setPrintText(V.print());
+      V.dump();
+//      i->setPrintText(V.print());
     }
   }
 
@@ -474,30 +474,30 @@ namespace runtime {
     void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT, char vpOn,
                          float value) {
       allocateStoredRefValueAndGetGV(vpI, vpSVR, vpQT).getAs<float>() = value;
-      dumpIfNoStorage(vpI, vpSVR, vpOn);
+      dumpIfNoStorage(vpSVR, vpOn);
     }
     void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT, char vpOn,
                          double value) {
       allocateStoredRefValueAndGetGV(vpI, vpSVR, vpQT).getAs<double>() = value;
-      dumpIfNoStorage(vpI, vpSVR, vpOn);
+      dumpIfNoStorage(vpSVR, vpOn);
     }
     void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT, char vpOn,
                          long double value) {
       allocateStoredRefValueAndGetGV(vpI, vpSVR, vpQT).getAs<long double>()
         = value;
-      dumpIfNoStorage(vpI, vpSVR, vpOn);
+      dumpIfNoStorage(vpSVR, vpOn);
     }
     void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT, char vpOn,
                          unsigned long long value) {
       allocateStoredRefValueAndGetGV(vpI, vpSVR, vpQT)
         .getAs<unsigned long long>() = value;
-      dumpIfNoStorage(vpI, vpSVR, vpOn);
+      dumpIfNoStorage(vpSVR, vpOn);
     }
     void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT, char vpOn,
                          const void* value){
       allocateStoredRefValueAndGetGV(vpI, vpSVR, vpQT).getAs<void*>()
         = const_cast<void*>(value);
-      dumpIfNoStorage(vpI, vpSVR, vpOn);
+      dumpIfNoStorage(vpSVR, vpOn);
     }
     void* setValueWithAlloc(void* vpI, void* vpSVR, void* vpQT, char vpOn) {
       return allocateStoredRefValueAndGetGV(vpI, vpSVR, vpQT).getAs<void*>();

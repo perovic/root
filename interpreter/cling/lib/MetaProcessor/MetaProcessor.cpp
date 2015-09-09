@@ -139,12 +139,12 @@ namespace cling {
       compRes = Interpreter::kMoreInputExpected;
     if (!input_text || !input_text[0]) {
       // nullptr / empty string, nothing to do.
-      printEvaluated();
+//      printEvaluated();
       return expectedIndent;
     }
     std::string input_line(input_text);
     if (input_line == "\n") { // just a blank line, nothing to do.
-      printEvaluated();
+//      printEvaluated();
       return expectedIndent;
     }
     //  Check for and handle meta commands.
@@ -153,14 +153,14 @@ namespace cling {
     if (m_MetaParser->isMetaCommand(actionResult, result)) {
 
       if (m_MetaParser->isQuitRequested()) {
-        printEvaluated();
+//        printEvaluated();
         return -1;
       }
 
       if (actionResult != MetaSema::AR_Success)
         compRes = Interpreter::kFailure;
 
-      printEvaluated();
+//      printEvaluated();
       // ExpectedIndent might have changed after meta command.
       return m_InputValidator->getExpectedIndent();
     }
@@ -169,7 +169,7 @@ namespace cling {
     // prompt for more.
     if (m_InputValidator->validate(input_line) == InputValidator::kIncomplete) {
       compRes = Interpreter::kMoreInputExpected;
-      printEvaluated();
+//      printEvaluated();
       return m_InputValidator->getExpectedIndent();
     }
 
@@ -180,26 +180,26 @@ namespace cling {
     //   compResLocal = m_Interp.declare(input);
     // else
     compRes = m_Interp.process(input, result);
-    printEvaluated();
+//    printEvaluated();
 
     return 0;
   }
 
-  void MetaProcessor::printEvaluated() {
-    std::string printText = m_Interp.getPrintText();
-    if (printText != "") {
-
-//      *m_Outs << printText << "\n";
-//      m_Outs->flush();
-
-      std::unique_ptr<llvm::raw_ostream> Out;
-      Out.reset(new llvm::raw_os_ostream(std::cout));
-      *Out.get() << printText << "\n";
-      Out->flush();
-
-      m_Interp.setPrintText("");
-    }
-  }
+//  void MetaProcessor::printEvaluated() {
+//    std::string printText = m_Interp.getPrintText();
+//    if (printText != "") {
+//
+////      *m_Outs << printText << "\n";
+////      m_Outs->flush();
+//
+//      std::unique_ptr<llvm::raw_ostream> Out;
+//      Out.reset(new llvm::raw_os_ostream(std::cout));
+//      *Out.get() << printText << "\n";
+//      Out->flush();
+//
+//      m_Interp.setPrintText("");
+//    }
+//  }
 
   void MetaProcessor::cancelContinuation() const {
     m_InputValidator->reset();

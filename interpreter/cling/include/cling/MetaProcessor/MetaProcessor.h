@@ -145,7 +145,7 @@ namespace cling {
                 Interpreter::CompilationResult& compRes,
                 cling::Value* result);
 
-    void printEvaluated();
+//    void printEvaluated();
 
     ///\brief When continuation is requested, this cancels and ignores previous
     /// input, resetting the continuation to a new line.

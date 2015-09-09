@@ -175,7 +175,7 @@ namespace cling {
     /// (dumpIfNoStorage/wrapper function and EvaluateInternal)
     /// to return the string, but rather only set this property.
     ///
-    std::string m_PrintText;
+//    std::string m_PrintText;
 
     ///\brief Interpreter callbacks.
     ///
@@ -552,8 +552,8 @@ namespace cling {
     bool isRawInputEnabled() const { return m_RawInputEnabled; }
     void enableRawInput(bool raw = true) { m_RawInputEnabled = raw; }
 
-    std::string getPrintText() const { return m_PrintText; }
-    void setPrintText(const std::string& text) { m_PrintText = text; }
+//    std::string getPrintText() const { return m_PrintText; }
+//    void setPrintText(const std::string& text) { m_PrintText = text; }
 
     clang::CompilerInstance* getCI() const;
     clang::Sema& getSema() const;
